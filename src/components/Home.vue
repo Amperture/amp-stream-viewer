@@ -25,6 +25,7 @@ export default {
   }),
   beforeMount() {
     this.$store.dispatch('loadUserInfo')
+    console.log(this.$store.state.user)
   }
 }
 </script>

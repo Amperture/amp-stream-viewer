@@ -5,6 +5,7 @@ import Vuex from 'vuex'
 
 // imports of ajax funcs go here
 import { fetchUserInfo } from '@/api'
+//import { router } from "../main.js"
 
 Vue.use(Vuex)
 
@@ -18,11 +19,10 @@ const state = {
 const actions = {  
   // asynchronous operations
   loadUserInfo(context) {
-    console.log("Checking for user info...")
     return fetchUserInfo()
       .then((response) => {
-        console.log(response.data)
-        context.commit('setUser', { user: response })
+        console.log( JSON.parse(JSON.stringify(response.data)))
+        context.commit('setUser', { user: response.data })
       })
   }
 }
@@ -31,6 +31,7 @@ const mutations = {
   // isolated data mutations
   setUser(state, payload){
     state.user = payload.user
+    console.log(state.user)
   }
 }
 
