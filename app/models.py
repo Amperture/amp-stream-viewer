@@ -1,24 +1,31 @@
-from app import db, google_bp
-from flask_login import UserMixin, current_user
-from flask_dance.consumer.backend.sqla import OAuthConsumerMixin, \
-        SQLAlchemyBackend
+from app import db
 
 import datetime
 
-class User(UserMixin, db.Model):
+class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(100), unique=True, nullable=False)
-    name = db.Column(db.String(100), nullable=False)
-    avatar = db.Column(db.String(200))
-    active = db.Column(db.Boolean, default=False)
-    tokens = db.Column(db.Text)
+    jwt_sub = db.Column(db.Integer, 
+            unique=True, 
+            nullable=False
+    )
+    email = db.Column(db.String(256), unique=True, nullable=False)
+    name = db.Column(db.String(256), nullable=False)
+    avatar = db.Column(db.String(512))
     created_at = db.Column(db.DateTime, default = datetime.datetime.utcnow())
+    oauth_creds = db.relationship('OAuthCreds', 
+            uselist=False)
 
     def __repr__(self):
         return '<User {}>'.format(self.name)
 
-class OAuth(OAuthConsumerMixin, db.Model):
-    user_id = db.Column(db.Integer, db.ForeignKey(User.id))
-    user = db.relationship(User)
+class OAuthCreds(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey(User.id), nullable=False) 
+    user = db.relationship('User', uselist=False)
+    token = db.Column(db.String(512), nullable=False)
+    refresh_token = db.Column(db.String(512), nullable=False)
+    token_uri = db.Column(db.String(512), nullable=False)
+    client_id = db.Column(db.String(512), nullable=False)
+    client_secret = db.Column(db.String(512), nullable=False)
+    scopes = db.Column(db.String(512), nullable=False)
 
-google_bp.backend = SQLAlchemyBackend(OAuth, db.session, user=current_user)
