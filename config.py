@@ -10,3 +10,4 @@ class Config(object):
     APP_DIR = os.path.dirname(__file__)
     DIST_DIR = os.path.join(APP_DIR, 'dist')
     CLIENT_SECRET_JSON_PATH = os.path.join(dirbase, 'client_secret.json')
+    FRONTEND_URL = os.environ.get('FRONTEND_URL')

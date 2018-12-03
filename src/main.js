@@ -18,12 +18,14 @@ Vue.config.productionTip = false
 
 // }}}
 // {{{ Google Auth Imports and Config
+/*
 import GoogleAuth from 'vue-google-oauth'
 Vue.use(GoogleAuth, {
   client_id: process.env.GOOGLE_OAUTH_CLIENT_ID,
   scope: 'profile email https://www.googleapis.com/auth/youtube.force-ssl https://www.googleapis.com/auth/youtube'
 })
 Vue.googleAuth().load()
+*/
 
 //}}} 
 //{{{ App Entry

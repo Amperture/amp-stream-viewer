@@ -8,6 +8,7 @@ class User(db.Model):
             unique=True, 
             nullable=False
     )
+    last_action = db.Column(db.DateTime, default = datetime.datetime.utcnow())
     email = db.Column(db.String(256), unique=True, nullable=False)
     name = db.Column(db.String(256), nullable=False)
     avatar = db.Column(db.String(512))
@@ -28,4 +29,3 @@ class OAuthCreds(db.Model):
     client_id = db.Column(db.String(512), nullable=False)
     client_secret = db.Column(db.String(512), nullable=False)
     scopes = db.Column(db.String(512), nullable=False)
-

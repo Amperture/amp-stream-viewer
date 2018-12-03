@@ -5,7 +5,9 @@
     <div class="hero-body">
       <div class="container has-text-centered">
         <h2 class="title">Search For YouTube Live Streams</h2>
-        <input class="input has-text-centered" type="text" placeholder="What do you want to search for?"/></input>
+        <form @submit.prevent="handleSearch">
+          <input class="input has-text-centered" type="text" v-model="search_text" placeholder="What do you want to search for?"/></input>
+        </form>
       </div>
     </div>
   </section>
@@ -13,21 +15,38 @@
 </template>
 
 <script>
+// {{{
 import { mapState } from 'vuex'  
 import Header from './Header'
 
 export default {  
-  components: {
+  components: { // {{{
     'AppHeader': Header
-  },
-  computed: mapState({
-    surveys: state => state.surveys
-  }),
-  beforeMount() {
-    this.$store.dispatch('loadUserInfo')
-    console.log(this.$store.state.user)
-  }
-}
+  }, // }}}
+
+  computed: // {{{
+    mapState({ 
+      surveys: state => state.surveys
+    }), // }}}
+
+  methods: { // {{{
+    handleSearch(){
+      this.$store.dispatch('search_youtube', this.search_text)
+        .then(response => {
+        console.log("Search Executed!")
+        })
+    }
+  }, // }}}
+
+  data() { // {{{ 
+    return {
+      search_text: ''
+    }
+  }, // }}}
+
+  beforeMount() { // {{{
+  } // }}}
+} // }}}
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
