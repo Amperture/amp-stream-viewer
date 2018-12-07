@@ -29,9 +29,9 @@ const actions = { // {{{
   loadUserInfo(context) { // {{{
     let jwt = localStorage.getItem('jwt')
     return new Promise((resolve, reject) => {
-      console.log("Fetching info...")
+      //console.log("Fetching info...")
       fetchUserInfo(jwt).then(response => {
-        console.log("information found")
+        //console.log("information found")
 
         if(response.data.loggedIn == true){
           context.commit('setUserName',   { name: response.data.name })
@@ -53,7 +53,7 @@ const actions = { // {{{
     return new Promise((resolve, reject) => {
       authorizeUser(authCode)
       .then((response) => {
-        console.log("Authentication successful. Committing User Data to store")
+        //console.log("Authentication successful. Committing User Data to store")
         context.commit('setUserName',   { name: response.data.user.name })
         context.commit('setUserEmail',  { email: response.data.user.email })
         context.commit('setUserAvatar', { avatar: response.data.user.avatar })
@@ -69,15 +69,15 @@ const actions = { // {{{
   }, 
 
   // }}}
-  search_youtube(context, search_text){ // {{{
+  searchYoutube(context, search_text){ // {{{
     let jwt = localStorage.getItem('jwt')
     return new Promise((resolve, reject) => {
       homePageSearchText(search_text, jwt)
       .then((response) => {
-        console.log(response.data)
+        //console.log(response.data)
       })
       .catch((error) => {
-        console.log("SEARCH ERROR: ", error)
+        //console.log("SEARCH ERROR: ", error)
         reject(error)
       })
     })
@@ -86,23 +86,23 @@ const actions = { // {{{
 
 const mutations = {  // {{{
   setUserName(state, payload){ // {{{
-    console.log('Setting Name: ', payload.name) 
+    //console.log('Setting Name: ', payload.name) 
     state.userName = payload.name
   }, /// }}}
   setUserLoggedInState(state, payload){ // {{{
-    console.log('Setting User Logged In State')
+    //console.log('Setting User Logged In State')
     state.userLoggedIn = payload.loginState
   }, // }}}
   setUserEmail(state, payload){ // {{{
-    console.log('Setting Email: ', payload.email) 
+    //console.log('Setting Email: ', payload.email) 
     state.userEmail = payload.email
   }, // }}}
   setUserAvatar(state, payload){ // {{{
-    console.log('Setting Avatar: ', payload.avatar) 
+    //console.log('Setting Avatar: ', payload.avatar) 
     state.userAvatar = payload.avatar
   }, // }}}
   setJWTToken(state, payload){ // {{{
-    console.log('Setting Token: ', payload) 
+    //console.log('Setting Token: ', payload) 
     localStorage.setItem('jwt', payload['token'])
   } // }}}
 } // }}}

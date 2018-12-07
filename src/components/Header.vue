@@ -1,17 +1,47 @@
-<template>  
+<template>  <!--{{{-->
 <nav class="navbar is-black" role="navigation" aria-label="main navigation">  
-  <div class="navbar-menu">
+  <span 
+    v-bind:class="{ burger: true, 'navbar-burger': true, 'is-active': burgerActive }"
+    v-on:click='burgerHandleClick'
+    data-target='headerNavbarMenu'>
+    <span></span>
+    <span></span>
+    <span></span>
+  </span>
+  <div v-bind:class="{'navbar-menu': true, 'is-active': navbarActive }" id='headerNavbarMenu'>
     <div class="navbar-start">
       <router-link to="/" class="navbar-item">
         Home
       </router-link>
     </div>
+    <div class='navbar-item'>
+      <SearchBar/>
+    </div>
   </div>
 </nav>  
-</template>
+</template> <!--}}}-->
+<script> /* {{{ */
+import SearchBar from './SearchBar'
 
-<script>  
 export default {
+  data() { // {{{
+    return {
+      burgerActive: false,
+      navbarActive: false
+    }
+    
+  }, // }}}
+  components: { // {{{
+    'SearchBar': SearchBar
+
+  }, // }}}
+  methods: { // {{{
+    burgerHandleClick: function(event){
+      console.log("BURGER CLICKED!")
+      this.burgerActive = !this.burgerActive
+      this.navbarActive = !this.navbarActive
+    }
+  }, // }}}
   computed: { // {{{
 
   }, // }}}
@@ -51,7 +81,10 @@ export default {
   } // }}}
 }
 
-</script>
-
-<style>  
-</style>  
+</script> /* }}} */
+<style> /* {{{ */
+$navbar-background-color: hsl(0,0%,29%);
+$navbar-item-hover-background-color: hsl(0,0%,45%);
+$navbar-item-color: hsl(0,0%,100%);
+$navbar-item-hover-color: hsl(0,0%,100%);
+</style> /* }}} */
