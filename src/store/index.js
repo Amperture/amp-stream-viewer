@@ -17,6 +17,7 @@ Vue.use(Vuex)
 const state = {  //{{{
   // single source of data
   ytStreams: [],
+  ytSearchTerm: '',
   currentStream: {},
   userName: '',
   userEmail: '',
@@ -69,15 +70,20 @@ const actions = { // {{{
   }, 
 
   // }}}
-  searchYoutube(context, search_text){ // {{{
+  searchYoutube(context, searchText, sortMethod){ // {{{
     let jwt = localStorage.getItem('jwt')
     return new Promise((resolve, reject) => {
-      homePageSearchText(search_text, jwt)
+      homePageSearchText(searchText, sortMethod, jwt)
       .then((response) => {
-        //console.log(response.data)
+        console.log(response.data)
+        context.commit('setJWTToken',   { token: response.data.jwt }) 
+        context.commit('setStreamList', { 
+          searchResult  :   response.data.searchResult,
+          searchTerm    :   searchText
+        }) 
       })
       .catch((error) => {
-        //console.log("SEARCH ERROR: ", error)
+        console.log("SEARCH ERROR: ", error)
         reject(error)
       })
     })
@@ -104,6 +110,21 @@ const mutations = {  // {{{
   setJWTToken(state, payload){ // {{{
     //console.log('Setting Token: ', payload) 
     localStorage.setItem('jwt', payload['token'])
+  }, // }}}
+  setStreamList(state, payload){ // {{{
+    //console.log('Setting Stream List: ', payload.search.items);
+    state.ytStreams = [];
+    state.ytSearchTerm = payload.searchTerm;
+    let streamList = payload.searchResult.items;
+    for(var i in streamList){
+      state.ytStreams.push({
+        'stream_id' : streamList[i].id.videoId,
+        'channel_name' : streamList[i].snippet.channelTitle,
+        'stream_description' : streamList[i].snippet.description,
+        'stream_title' : streamList[i].snippet.title,
+        'thumbnail' : streamList[i].snippet.thumbnails.high.url
+      })
+    }
   } // }}}
 } // }}}
 
@@ -116,7 +137,7 @@ const store = new Vuex.Store({ // {{{
   actions,
   mutations,
   getters
-}) // {{{
+}) // }}}
 
 export default store  
 

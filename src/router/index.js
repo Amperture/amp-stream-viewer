@@ -4,6 +4,7 @@ import Home from '@/components/Home'
 import StreamEmbed from '@/components/StreamEmbed'
 import Login from '@/components/Login'
 import SearchYoutube from '@/components/SearchYoutube'
+import WatchYoutube from '@/components/WatchYoutube'
 
 Vue.use(Router)
 
@@ -21,12 +22,17 @@ export default new Router({
       component: Login
     },
     {
-      path: '/ytstream/:id',
+      path: '/ytstream',
       name: 'StreamEmbed',
       component: StreamEmbed
     },
     {
-      path: '/ytsearch/:searchTerm/:sortOrder',
+      path: '/ytwatch',
+      name: 'WatchYoutube',
+      component: WatchYoutube
+    },
+    {
+      path: '/ytsearch',
       name: 'SearchYoutube',
       component: SearchYoutube
     }

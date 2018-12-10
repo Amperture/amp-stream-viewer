@@ -12,11 +12,15 @@ export function authorizeUser(authCode){ // {{{
   return axios.post(`${API_URL}/auth`, {authCode: authCode})
 } // }}}
 
-export function homePageSearchText(searchText, jwt){ //{{{
+export function homePageSearchText(searchText, sortMethod, jwt){ //{{{
   console.log(searchText, jwt)
+  if(sortMethod == undefined){
+    sortMethod = 'relevance';
+  }
   return axios.post(`${API_URL}/searchyt`, 
     {
       searchText: searchText,
+      sortMethod: sortMethod,
       jwt: jwt
     })
 } //}}}

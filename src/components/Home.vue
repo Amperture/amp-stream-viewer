@@ -5,6 +5,7 @@
     <div class="hero-body">
       <div class="container has-text-centered">
         <h2 class="title">Search For YouTube Live Streams</h2>
+        <h3 class="subtitle">Please use the search bar above to find a stream you would like to watch!</h3>
       </div>
     </div>
   </section>

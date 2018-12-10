@@ -46,6 +46,7 @@ def searchyt():
         form        = request.get_json()
         jwt         = form['jwt']
         search_text = form['searchText']
+        sort_method = form['sortMethod']
         #print("JWT TOKEN: ", jwt)
         #print("SEARCH TERM: ", search_text)
     except:
@@ -79,9 +80,10 @@ def searchyt():
             part='id,snippet',
             q=search_text,
             type='video',
+            order=sort_method,
             eventType='live'
     ).execute()
-    #pprint.pprint(searchResponse)
+    pprint.pprint(searchResponse)
 
     response = {
             'searchResult'     :   searchResponse,

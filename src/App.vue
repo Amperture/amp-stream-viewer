@@ -17,6 +17,8 @@ export default {
 // {{{ main options
 $primary: hsl(0, 0%, 21%);
 $background: hsl(0, 0%, 29%);
+$title-color: hsl(0, 0%, 98%);
+$body-color: hsl(0,0%,98%);
 
 // }}}
 // {{{ navbar options

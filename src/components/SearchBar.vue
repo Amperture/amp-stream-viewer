@@ -43,14 +43,21 @@ export default {
     }
   }, // }}}
   methods: {//{{{
-    handleSearch(){
-      console.log(this.searchText, this.selectedOrder)
+    handleSearch(){ // {{{
+      //console.log(this.searchText, this.selectedOrder)
+      this.$store.dispatch(
+        'searchYoutube', 
+        this.searchText, 
+        this.selectedOrder)
+
       this.$router.push({
         name: 'SearchYoutube',
-        params: {
-          searchTerm: this.searchText,
-          sortOrder:  this.selectedOrder
+        /*
+        query: {
+          search: this.searchText,
+          sort:  this.selectedOrder
         },
+        */
       })
       /*
       this.$store.dispatch('searchYoutube', this.search_text)
@@ -63,5 +70,3 @@ export default {
   }, //}}}
 }
 </script> /* }}} */
-<style> /* {{{ */
-</style> /* }}} */

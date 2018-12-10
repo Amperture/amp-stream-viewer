@@ -83,8 +83,4 @@ export default {
 
 </script> /* }}} */
 <style> /* {{{ */
-$navbar-background-color: hsl(0,0%,29%);
-$navbar-item-hover-background-color: hsl(0,0%,45%);
-$navbar-item-color: hsl(0,0%,100%);
-$navbar-item-hover-color: hsl(0,0%,100%);
 </style> /* }}} */

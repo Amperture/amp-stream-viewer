@@ -21,9 +21,6 @@ Vue.config.productionTip = false
 
 
 // }}}
-// {{{
-
-// }}}
 //{{{ App Entry
 /* eslint-disable no-new */
 new Vue({
