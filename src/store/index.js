@@ -9,7 +9,9 @@ import Vuex from 'vuex'
 import { 
   fetchUserInfo, 
   authorizeUser,
-  homePageSearchText } from '@/api'
+  homePageSearchText,
+  fetchChatMessages,
+  fetchVideoChatID } from '@/api'
 // }}}
 
 Vue.use(Vuex)
@@ -24,9 +26,7 @@ const state = {  //{{{
   userAvatar: '',
   userLoggedIn: false,
 } //}}}
-
-const actions = { // {{{
-  // asynchronous operations
+const actions = { // {{{ 
   loadUserInfo(context) { // {{{
     let jwt = localStorage.getItem('jwt')
     return new Promise((resolve, reject) => {
@@ -70,12 +70,14 @@ const actions = { // {{{
   }, 
 
   // }}}
-  searchYoutube(context, searchText, sortMethod){ // {{{
+  searchYoutube(context, {searchText, sortMethod}){ // {{{
     let jwt = localStorage.getItem('jwt')
+    console.log("SEARCH TEXT: ", searchText)
+    console.log("SORT METHOD: ", sortMethod)
     return new Promise((resolve, reject) => {
       homePageSearchText(searchText, sortMethod, jwt)
       .then((response) => {
-        console.log(response.data)
+        //console.log(response.data)
         context.commit('setJWTToken',   { token: response.data.jwt }) 
         context.commit('setStreamList', { 
           searchResult  :   response.data.searchResult,
@@ -88,8 +90,42 @@ const actions = { // {{{
       })
     })
   }, // }}}
-} // }}}
+  grabVideoChatID(context, videoID){ // {{{
+    let jwt = localStorage.getItem('jwt')
+    return new Promise((resolve, reject) => {
+      fetchVideoChatID(videoID, jwt)
+      .then((response) => {
+        context.commit('setJWTToken',   { token: response.data.jwt }) 
+        resolve(response.data)
+      })
+      .catch((error) => {
+        console.log("CHAT ID ERROR: ", error)
+        reject(error)
+      })
+    })
+  }, // }}}
+  getLiveChatMessages(context, {chatID, chatNextPageToken}){ // {{{
+    let jwt = localStorage.getItem('jwt')
+    //console.log("Action for Polling Chat Messages")
+    //console.log("JWT: ", jwt)
+    //console.log("ChatID: ", chatID)
+    //console.log("ChatNextPageToken: ", chatNextPageToken)
 
+    return new Promise((resolve, reject) => {
+      fetchChatMessages(chatID, chatNextPageToken, jwt)
+      .then((response) => {
+        //console.log(response.data)
+        context.commit('setJWTToken',   { token: response.data.jwt }) 
+        resolve(response.data.chatMessages)
+      })
+      .catch((error) => {
+        console.log("MESSAGES ERROR: ", error)
+        reject(error)
+      });
+
+    });
+  }, // }}}
+} // }}}
 const mutations = {  // {{{
   setUserName(state, payload){ // {{{
     //console.log('Setting Name: ', payload.name) 
@@ -127,11 +163,9 @@ const mutations = {  // {{{
     }
   } // }}}
 } // }}}
-
 const getters = {  // {{{
   // reusable data accessors
 } // }}}
-
 const store = new Vuex.Store({ // {{{
   state,
   actions,

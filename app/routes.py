@@ -24,18 +24,6 @@ import os
 
 #}}}
 
-'''
-#{{{ Main Index Route. Render Webpage
-@app.route('/', defaults={'path':''})
-@app.route('/index', defaults={'path':''})
-@app.route('/<path:path>')
-def index(path):
-    dist_dir = app.config['DIST_DIR']
-    index_path = os.path.join(dist_dir, 'index.html')
-    return send_file(index_path)
-
-#}}} 
-'''
 @app.route('/api/searchyt', methods=["POST"]) #{{{
 def searchyt():
     '''
@@ -88,6 +76,115 @@ def searchyt():
     response = {
             'searchResult'     :   searchResponse,
             'jwt'              :   jwt
+            }
+
+    return jsonify(response)
+
+#}}} 
+@app.route('/api/getchatid', methods=["GET"]) #{{{
+def getChatID():
+    # Process form {{{
+    try:
+        pprint.pprint(request.args)
+        videoID     =   request.args['videoID']
+        jwt         =   request.args['jwt']
+        #videoID     =   request.args.get('videoID')
+    except:
+        return jsonify({
+            'error': "empty_request"
+            }), 500 # }}}
+    #Verify JWT token {{{
+    try:
+        idInfo = id_token.verify_oauth2_token(
+                jwt, 
+                requests.Request(), 
+                app.config['GOOGLE_OAUTH_CLIENT_ID']
+        )
+        #pprint.pprint(idInfo) 
+    except:
+        return jsonify({'error' : 'invalid_token'}), 500 
+
+    #}}}
+    #{{{ Grab API Credentials
+    dbQuery = User.query.filter_by(jwt_sub = idInfo['sub'])
+    user = dbQuery.one()
+    credentials = _dbToCreds(user.oauth_creds.id)
+    jwt = _refreshIdTokenIfNeeded(jwt, idInfo, credentials)
+    #print(credentials)
+    #print(user.email)
+
+    #}}}
+    # {{{ Make API call and grab Chat ID
+    youtube = build('youtube', 'v3', credentials=credentials)
+    broadcast = youtube.videos().list(
+            part='id,liveStreamingDetails',
+            id=videoID
+    ).execute()
+    chatID = broadcast['items'][0]['liveStreamingDetails']['activeLiveChatId']
+    #print(chatID)
+    # }}}
+
+    response = {
+            'chatID'        :   chatID,
+            'jwt'           :   jwt
+            }
+
+    return jsonify(response)
+
+#}}} 
+@app.route('/api/getchatmsgs', methods=["GET"]) #{{{
+def getChatMsgs():
+    # Process form {{{
+    try:
+        chatID              =   request.args['chatID']
+        jwt                 =   request.args['jwt']
+        chatNextPageToken   =   ''
+        if 'chatNextPageToken' in request.args:
+            chatNextPageToken = request.args['chatNextPageToken']
+            print(chatNextPageToken)
+    except:
+        print("Empty Request Error")
+        return jsonify({
+            'error': "empty_request"
+            }), 500 
+
+    print(chatID, chatNextPageToken)
+    # }}}
+    #Verify JWT token {{{
+    try:
+        idInfo = id_token.verify_oauth2_token(
+                jwt, 
+                requests.Request(), 
+                app.config['GOOGLE_OAUTH_CLIENT_ID']
+        )
+        #pprint.pprint(idInfo) 
+    except:
+        return jsonify({'error' : 'invalid_token'}), 500 
+
+    #}}}
+    #{{{ Grab API Credentials
+    dbQuery = User.query.filter_by(jwt_sub = idInfo['sub'])
+    user = dbQuery.one()
+    credentials = _dbToCreds(user.oauth_creds.id)
+    jwt = _refreshIdTokenIfNeeded(jwt, idInfo, credentials)
+    #print(credentials)
+    #print(user.email)
+
+    #}}}
+    # {{{ Make API Call to grab chat messages
+    youtube = build('youtube', 'v3', credentials=credentials)
+    chatMessages = youtube.liveChatMessages().list(
+            part='id,snippet,authorDetails',
+            pageToken=chatNextPageToken,
+            liveChatId=chatID
+    ).execute()
+
+    pprint.pprint(chatMessages)
+    # }}}
+
+    response = {
+            'chatMessages'  :   chatMessages,
+            'jwt'           :   jwt
             }
 
     return jsonify(response)
@@ -242,6 +339,7 @@ def googleAuth():
     return redirect(authorization_url, code=302)
 
 #}}}
+
 def _credsToDict(credentials): #{{{
     '''
     Making a Credentials object into a dictionary

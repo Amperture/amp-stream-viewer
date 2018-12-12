@@ -46,9 +46,10 @@ export default {
     handleSearch(){ // {{{
       //console.log(this.searchText, this.selectedOrder)
       this.$store.dispatch(
-        'searchYoutube', 
-        this.searchText, 
-        this.selectedOrder)
+        'searchYoutube', {
+          searchText: this.searchText,
+          sortMethod: this.selectedOrder}
+        )
 
       this.$router.push({
         name: 'SearchYoutube',
