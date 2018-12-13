@@ -50,6 +50,16 @@ export default {
           searchText: this.searchText,
           sortMethod: this.selectedOrder}
         )
+        .then((response) => { // {{{
+
+        }) // }}}
+        .catch((error) => { // {{{
+          switch(error){
+            case 'invalid_token':
+              this.$router.push('login')
+              break;
+          }
+        }) // }}}
 
       this.$router.push({
         name: 'SearchYoutube',

@@ -72,8 +72,8 @@ const actions = { // {{{
   // }}}
   searchYoutube(context, {searchText, sortMethod}){ // {{{
     let jwt = localStorage.getItem('jwt')
-    console.log("SEARCH TEXT: ", searchText)
-    console.log("SORT METHOD: ", sortMethod)
+    //console.log("SEARCH TEXT: ", searchText)
+    //console.log("SORT METHOD: ", sortMethod)
     return new Promise((resolve, reject) => {
       homePageSearchText(searchText, sortMethod, jwt)
       .then((response) => {
@@ -116,7 +116,7 @@ const actions = { // {{{
       .then((response) => {
         //console.log(response.data)
         context.commit('setJWTToken',   { token: response.data.jwt }) 
-        resolve(response.data.chatMessages)
+        resolve(response.data)
       })
       .catch((error) => {
         console.log("MESSAGES ERROR: ", error)

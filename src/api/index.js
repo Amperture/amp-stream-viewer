@@ -25,21 +25,19 @@ export function homePageSearchText(searchText, sortMethod, jwt){ //{{{
 export function fetchVideoChatID(videoID, jwt){ //{{{
   //console.log("GRABBING VIDEO CHAT ID WITH PARAMETERS")
   //console.log(videoID, jwt)
-  return axios.get(`${API_URL}/getchatid`, {
-    params: {
+  return axios.post(`${API_URL}/getchatid`, {
       videoID: videoID,
       jwt: jwt
-    }})
+    })
 } //}}}
 export function fetchChatMessages( // {{{
   chatID, 
   chatNextPageToken, 
   jwt ){ 
   //console.log(chatID, chatNextPageToken, jwt)
-  return axios.get(`${API_URL}/getchatmsgs`, {
-    params: {
+  return axios.post(`${API_URL}/getchatmsgs`, {
       chatID: chatID,
       chatNextPageToken: chatNextPageToken,
       jwt: jwt
-    }})
+    })
 } // }}}

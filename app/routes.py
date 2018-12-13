@@ -27,7 +27,7 @@ import os
 @app.route('/api/searchyt', methods=["POST"]) #{{{
 def searchyt():
     '''
-    Stream Search
+    Search youtube live streams.
     '''
     # Process form {{{
     try:
@@ -41,28 +41,21 @@ def searchyt():
         return jsonify({
             'error': "empty_request"
             }), 500 # }}}
-    #Verify JWT token {{{
+    #{{{ Verify Identity and Grab Credentials For API Call
     try:
-        idInfo = id_token.verify_oauth2_token(
-                jwt, 
-                requests.Request(), 
-                app.config['GOOGLE_OAUTH_CLIENT_ID']
-        )
-        #pprint.pprint(idInfo) 
+        user, idInfo = _verifyJWTToken(jwt)
+        credentials = _dbToCreds(user.oauth_creds.id)
+        #print(credentials)
+        #print(user.email)
     except:
-        return jsonify({'error' : 'invalid_token'}), 500 
+        return jsonify({
+            'error' : 'invalid_token'
+            }), 500
 
-    #}}}
-    #{{{ 
-    dbQuery = User.query.filter_by(jwt_sub = idInfo['sub'])
-    user = dbQuery.one()
-    credentials = _dbToCreds(user.oauth_creds.id)
     jwt = _refreshIdTokenIfNeeded(jwt, idInfo, credentials)
-    #print(credentials)
-    #print(user.email)
 
     #}}}
-
+    #{{{ Create Youtube stream search API and execute
     youtube = build('youtube', 'v3', credentials=credentials)
     searchResponse = youtube.search().list(
             part='id,snippet',
@@ -72,6 +65,7 @@ def searchyt():
             eventType='live'
     ).execute()
     pprint.pprint(searchResponse)
+    #}}}
 
     response = {
             'searchResult'     :   searchResponse,
@@ -81,37 +75,29 @@ def searchyt():
     return jsonify(response)
 
 #}}} 
-@app.route('/api/getchatid', methods=["GET"]) #{{{
+@app.route('/api/getchatid', methods=["POST"]) #{{{
 def getChatID():
     # Process form {{{
     try:
-        pprint.pprint(request.args)
-        videoID     =   request.args['videoID']
-        jwt         =   request.args['jwt']
-        #videoID     =   request.args.get('videoID')
+        form        = request.get_json()
+        jwt         = form['jwt']
+        videoID     = form['videoID']
     except:
         return jsonify({
             'error': "empty_request"
             }), 500 # }}}
-    #Verify JWT token {{{
+    #{{{ Verify Identity and Grab Credentials For API Call
     try:
-        idInfo = id_token.verify_oauth2_token(
-                jwt, 
-                requests.Request(), 
-                app.config['GOOGLE_OAUTH_CLIENT_ID']
-        )
-        #pprint.pprint(idInfo) 
+        user, idInfo = _verifyJWTToken(jwt)
+        credentials = _dbToCreds(user.oauth_creds.id)
+        #print(credentials)
+        #print(user.email)
     except:
-        return jsonify({'error' : 'invalid_token'}), 500 
+        return jsonify({
+            'error' : 'invalid_token'
+            }), 500
 
-    #}}}
-    #{{{ Grab API Credentials
-    dbQuery = User.query.filter_by(jwt_sub = idInfo['sub'])
-    user = dbQuery.one()
-    credentials = _dbToCreds(user.oauth_creds.id)
     jwt = _refreshIdTokenIfNeeded(jwt, idInfo, credentials)
-    #print(credentials)
-    #print(user.email)
 
     #}}}
     # {{{ Make API call and grab Chat ID
@@ -132,43 +118,34 @@ def getChatID():
     return jsonify(response)
 
 #}}} 
-@app.route('/api/getchatmsgs', methods=["GET"]) #{{{
+@app.route('/api/getchatmsgs', methods=["POST"]) #{{{
 def getChatMsgs():
     # Process form {{{
     try:
-        chatID              =   request.args['chatID']
-        jwt                 =   request.args['jwt']
-        chatNextPageToken   =   ''
-        if 'chatNextPageToken' in request.args:
-            chatNextPageToken = request.args['chatNextPageToken']
-            print(chatNextPageToken)
+        form                = request.get_json()
+        jwt                 = form['jwt']
+        chatID              = form['chatID']
+        chatNextPageToken   = ''
+        if 'chatNextPageToken' in form:
+            chatNextPageToken = form['chatNextPageToken']
     except:
-        print("Empty Request Error")
         return jsonify({
             'error': "empty_request"
             }), 500 
 
-    print(chatID, chatNextPageToken)
-    # }}}
-    #Verify JWT token {{{
-    try:
-        idInfo = id_token.verify_oauth2_token(
-                jwt, 
-                requests.Request(), 
-                app.config['GOOGLE_OAUTH_CLIENT_ID']
-        )
-        #pprint.pprint(idInfo) 
-    except:
-        return jsonify({'error' : 'invalid_token'}), 500 
-
     #}}}
-    #{{{ Grab API Credentials
-    dbQuery = User.query.filter_by(jwt_sub = idInfo['sub'])
-    user = dbQuery.one()
-    credentials = _dbToCreds(user.oauth_creds.id)
+    #{{{ Verify Identity and Grab Credentials For API Call
+    try:
+        user, idInfo = _verifyJWTToken(jwt)
+        credentials = _dbToCreds(user.oauth_creds.id)
+        #print(credentials)
+        #print(user.email)
+    except:
+        return jsonify({
+            'error' : 'invalid_token'
+            }), 500
+
     jwt = _refreshIdTokenIfNeeded(jwt, idInfo, credentials)
-    #print(credentials)
-    #print(user.email)
 
     #}}}
     # {{{ Make API Call to grab chat messages
@@ -178,15 +155,19 @@ def getChatMsgs():
             pageToken=chatNextPageToken,
             liveChatId=chatID
     ).execute()
+    #pprint.pprint(chatMessages)
 
-    pprint.pprint(chatMessages)
+    messageList = _processChatMessagesForClient(chatMessages['items'])
     # }}}
 
     response = {
-            'chatMessages'  :   chatMessages,
-            'jwt'           :   jwt
+            'messageList'            : messageList,
+            'nextPageToken'         : chatMessages['nextPageToken'],
+            'pollingIntervalMillis' : chatMessages['pollingIntervalMillis'],
+            'jwt'                   : jwt
             }
 
+    #pprint.pprint(response)
     return jsonify(response)
 
 #}}} 
@@ -281,31 +262,12 @@ def authUser():
 @app.route('/api/userinfo', methods=["POST"]) #{{{
 def userInfo(): 
     '''
-    Grab User Info from DB
+    Grab User Info from DB, requires JWT token as POST parameter.
     '''
     data = request.get_json()
     jwt = data['jwt']
     try:
-        '''
-        Grabbing the JWT 'sub' token.
-        Since the token is directly coming from Google via HTTPS, 
-        we can assume it's a legit id_token, and thus don't need to perform
-        a full validation.
-        '''
-        idInfo = id_token.verify_oauth2_token(
-                jwt, 
-                requests.Request(), 
-                app.config['GOOGLE_OAUTH_CLIENT_ID']
-        )
-        pprint.pprint(idInfo)
-        dbQuery = User.query.filter_by(jwt_sub = idInfo['sub'])
-    except Exception as ex:
-        print("Error retrieving profile: ", ex)
-        return jsonify({
-            'error' : 'Error retrieving profile information.'
-            }), 500
-    try:
-        user = dbQuery.one()
+        user, idInfo = _verifyJWTToken(jwt)
         sendback = {
             'name' : user.name,
             'email' : user.email, 
@@ -315,7 +277,9 @@ def userInfo():
         print(sendback)
         return jsonify(sendback)
     except:
-        return jsonify({'validToken' : False}), 500
+        return jsonify({
+            'error' : 'invalid_token'
+            }), 500
 #}}}
 @app.route('/googleauth', methods=["GET"]) #{{{
 def googleAuth():
@@ -422,4 +386,58 @@ def _refreshIdTokenIfNeeded(jwt, idInfo, credentials):#{{{
         '''
 
     return jwt
+#}}}
+def _verifyJWTToken(jwt):#{{{
+    '''
+    Take a provided JWT token, verify that it is genuine with Google.
+    Then verify that it corresponds to an existing user in the database.
+    Return that user information from a database call.
+    '''
+    try:
+        idInfo = id_token.verify_oauth2_token(
+                jwt, 
+                requests.Request(), 
+                app.config['GOOGLE_OAUTH_CLIENT_ID']
+        )
+        #pprint.pprint(idInfo)
+
+        if idInfo['iss'] not in ['accounts.google.com', 
+                'https://accounts.google.com']:
+            raise ValueError("wrong_issuer")
+        
+    except Exception as ex:
+        print("Error retrieving profile: ", ex)
+        pass
+
+    try:
+        dbQuery = User.query.filter_by(jwt_sub = idInfo['sub'])
+        user = dbQuery.one()
+    except Exception as ex:
+        print("User Not Found")
+        pass
+
+    return user, idInfo
+#}}}
+def _processChatMessagesForClient(messages):#{{{
+    '''
+    Process the `items` returned by YouTube's liveChatMessageListResponse call
+    and return a list of json/dict objects cleaner for the web client.
+    '''
+    messageList = []
+    for item in messages:
+        pprint.pprint(item['authorDetails'])
+        messageDict = {
+                'msgID'         : item['id'],
+                'channelID'     : item['authorDetails']['channelId'],
+                'authorName'    : item['authorDetails']['displayName'],
+                'isMod'         : item['authorDetails']['isChatModerator'],
+                'isOwner'       : item['authorDetails']['isChatOwner'],
+                'isSponsor'     : item['authorDetails']['isChatSponsor'],
+                'avatar'        : item['authorDetails']['profileImageUrl'],
+                'text'          : item['snippet']['displayMessage']
+                }
+        messageList.append(messageDict)
+        
+    return messageList
+
 #}}}
