@@ -171,6 +171,59 @@ def getChatMsgs():
     return jsonify(response)
 
 #}}} 
+@app.route('/api/sendchatmsg', methods=["POST"]) #{{{
+def sendChatMSG():
+    # Process form {{{
+    try:
+        form        = request.get_json()
+        jwt         = form['jwt']
+        chatID      = form['chatID']
+        messageText = form['messageText']
+    except:
+        return jsonify({
+            'error': "empty_request"
+            }), 500 
+
+    #}}}
+    #{{{ Verify Identity and Grab Credentials For API Call
+    try:
+        user, idInfo = _verifyJWTToken(jwt)
+        credentials = _dbToCreds(user.oauth_creds.id)
+        #print(credentials)
+        #print(user.email)
+    except:
+        return jsonify({
+            'error' : 'invalid_token'
+            }), 500
+
+    jwt = _refreshIdTokenIfNeeded(jwt, idInfo, credentials)
+
+    #}}}
+    # {{{ Make API to send Chat Message
+    youtube = build('youtube', 'v3', credentials=credentials)
+    messageSent = youtube.liveChatMessages().insert(
+            part='snippet',
+            body={
+                'snippet' : {
+                    'liveChatId'            : chatID,
+                    'type'                  : 'textMessageEvent',
+                    'textMessageDetails'    : { 'messageText' : messageText }
+                    }
+                }
+    ).execute()
+    pprint.pprint(messageSent)
+
+    # }}}
+
+    response = {
+            'sucess'    : True,
+            'jwt'       : jwt
+            }
+
+    #pprint.pprint(response)
+    return jsonify(response)
+
+#}}} 
 @app.route('/api/auth', methods=["POST"]) #{{{
 def authUser():
     '''
@@ -425,7 +478,7 @@ def _processChatMessagesForClient(messages):#{{{
     '''
     messageList = []
     for item in messages:
-        pprint.pprint(item['authorDetails'])
+        #pprint.pprint(item['authorDetails'])
         messageDict = {
                 'msgID'         : item['id'],
                 'channelID'     : item['authorDetails']['channelId'],

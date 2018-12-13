@@ -48,8 +48,8 @@ export default {
       this.$store.dispatch(
         'searchYoutube', {
           searchText: this.searchText,
-          sortMethod: this.selectedOrder}
-        )
+          sortMethod: this.selectedOrder
+        })
         .then((response) => { // {{{
 
         }) // }}}

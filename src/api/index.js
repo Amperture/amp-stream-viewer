@@ -41,3 +41,14 @@ export function fetchChatMessages( // {{{
       jwt: jwt
     })
 } // }}}
+export function sendChatMessage( // {{{
+  chatID, 
+  messageText, 
+  jwt ){ 
+  //console.log(chatID, chatNextPageToken, jwt)
+  return axios.post(`${API_URL}/sendchatmsg`, {
+      chatID: chatID,
+      messageText: messageText,
+      jwt: jwt
+    })
+} // }}}

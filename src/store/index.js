@@ -11,6 +11,7 @@ import {
   authorizeUser,
   homePageSearchText,
   fetchChatMessages,
+  sendChatMessage,
   fetchVideoChatID } from '@/api'
 // }}}
 
@@ -115,6 +116,27 @@ const actions = { // {{{
       fetchChatMessages(chatID, chatNextPageToken, jwt)
       .then((response) => {
         //console.log(response.data)
+        context.commit('setJWTToken',   { token: response.data.jwt }) 
+        resolve(response.data)
+      })
+      .catch((error) => {
+        console.log("MESSAGES ERROR: ", error)
+        reject(error)
+      });
+
+    });
+  }, // }}}
+  sendLiveChatMessage(context, {chatID, messageText}){ // {{{
+    let jwt = localStorage.getItem('jwt')
+    //console.log("Action for Polling Chat Messages")
+    //console.log("JWT: ", jwt)
+    //console.log("ChatID: ", chatID)
+    //console.log("ChatNextPageToken: ", chatNextPageToken)
+
+    return new Promise((resolve, reject) => {
+      sendChatMessage(chatID, messageText, jwt)
+      .then((response) => {
+        console.log(response.data)
         context.commit('setJWTToken',   { token: response.data.jwt }) 
         resolve(response.data)
       })

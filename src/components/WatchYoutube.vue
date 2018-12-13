@@ -1,24 +1,31 @@
 <template>  <!--{{{-->
 <div>
-<AppHeader/>
-<div class="video-container">
-  <iframe width="640" height="360" :src="this.youtubeEmbedURL" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-</div>
-<div>
-  <table class='table chat-box'>
-    <tbody>
-      <tr v-for="message in chatTable">
-        <td>
-          <figure class='image is-32x32'>
-            <img class='is-rounded' v-bind:src="message.avatar"/>
-          </figure>
-        </td>
-        <td><strong>{{ message.authorName }}</strong>
-        {{ message.text }}</td>
-      </tr>
-    </tbody>
-  </table>
-</div> 
+  <AppHeader/>
+  <div class="video-container"> <!-- Video Container {{{ -->
+    <iframe width="640" height="360" :src="this.youtubeEmbedURL" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+  </div> <!-- }}} -->
+  <div> <!-- Chat Table {{{--> 
+    <table class='table chat-box'>
+      <tbody>
+        <tr v-for="message in chatTable">
+          <td>
+            <figure class='image is-32x32'>
+              <img class='is-rounded' v-bind:src="message.avatar"/>
+            </figure>
+          </td>
+          <td><strong>{{ message.authorName }}</strong>
+          {{ message.text }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div> <!--}}}-->
+  <form @submit.prevent='handleSendChat'><!--Send Chat Form {{{-->
+    <div class='field'> 
+      <div class="control">
+        <input class="input" v-model='messageTextToSend' type="text" placeholder="Chat!">
+      </div>
+    </div>
+  </form><!--}}}-->
 </div>
 </template> <!--}}}-->
 <script> /* {{{ */
@@ -39,6 +46,7 @@ export default {
       chatNextPageToken   : null,
       chatNextInterval    : null,
       chatTable           : [],
+      chatToSend          : null
     }
 
   }, // }}}
@@ -50,13 +58,13 @@ export default {
 
   }, // }}}
   methods: { // {{{ 
+
     addChatMessagesToTable(messageList){// {{{
       this.chatTable = this.chatTable.concat(messageList)
       if(this.chatTable.length > 50){
         this.chatTable = this.chatTable.slice(-50);
       }
     }, // }}}
-
     pollChatMessages(){ // {{{
       // Dispatch Action to Grab Chat Messages
       //console.log("Polling for Chat Messages")
@@ -79,7 +87,18 @@ export default {
 
         })
 
+    }, // }}}
+    handleSendChat(){ // {{{
+      this.$store.dispatch(
+        'sendLiveChatMessage', {
+          chatID      : this.liveChatID,
+          messageText : this.messageTextToSend
+        })
+        .then((response) => {
+          this.messageTextToSend = null;
+        })
     } // }}}
+
   }, // }}}
   beforeDestroy(){ // {{{
     clearTimeout(this.chatPolling)
