@@ -106,8 +106,8 @@ def getChatID():
             part='id,liveStreamingDetails',
             id=videoID
     ).execute()
+    pprint.pprint(broadcast)
     chatID = broadcast['items'][0]['liveStreamingDetails']['activeLiveChatId']
-    #print(chatID)
     # }}}
 
     response = {
@@ -478,16 +478,16 @@ def _processChatMessagesForClient(messages):#{{{
     '''
     messageList = []
     for item in messages:
-        #pprint.pprint(item['authorDetails'])
+        pprint.pprint(item)
         messageDict = {
-                'msgID'         : item['id'],
-                'channelID'     : item['authorDetails']['channelId'],
-                'authorName'    : item['authorDetails']['displayName'],
-                'isMod'         : item['authorDetails']['isChatModerator'],
-                'isOwner'       : item['authorDetails']['isChatOwner'],
-                'isSponsor'     : item['authorDetails']['isChatSponsor'],
-                'avatar'        : item['authorDetails']['profileImageUrl'],
-                'text'          : item['snippet']['displayMessage']
+                'msgID'             : item['id'],
+                'authorChannelID'   : item['authorDetails']['channelId'],
+                'authorName'        : item['authorDetails']['displayName'],
+                'isMod'             : item['authorDetails']['isChatModerator'],
+                'isOwner'           : item['authorDetails']['isChatOwner'],
+                'isSponsor'         : item['authorDetails']['isChatSponsor'],
+                'avatar'            : item['authorDetails']['profileImageUrl'],
+                'text'              : item['snippet']['displayMessage']
                 }
         messageList.append(messageDict)
         
