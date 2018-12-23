@@ -55,6 +55,7 @@ export default {
       chatNextPageToken   : null,
       chatNextInterval    : null,
       chatTable           : [],
+      chatActive          : true, // flag for chat polling
       messageTextToSend   : null
     }
 
@@ -99,9 +100,11 @@ export default {
           this.chatNextInterval = response.pollingIntervalMillis;
           this.chatNextPageToken = response.nextPageToken;
 
-          this.chatPolling = setTimeout(() => {
-            this.pollChatMessages();
-          }, this.chatNextInterval);
+          if (this.chatActive == true){
+            this.chatPolling = setTimeout(() => {
+              this.pollChatMessages();
+            }, this.chatNextInterval);
+          }
         })
         .catch((error) => {
 
@@ -124,7 +127,8 @@ export default {
 
   }, // }}}
   beforeDestroy(){ // {{{
-    clearTimeout(this.chatPolling)
+    this.chatActive = false // Disable chat polling.
+    // clearTimeout(this.chatPolling)
     window.removeEventListener('resize', this.handleResize)
   }, // }}}
   mounted(){ // {{{

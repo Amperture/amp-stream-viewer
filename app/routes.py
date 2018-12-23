@@ -7,9 +7,11 @@ from flask import redirect, url_for, jsonify, request, send_file
 
 from flask_login import login_required, login_user, logout_user, current_user
 
-from app.models import User, OAuthCreds
+from app.models import User, OAuthCreds, StreamLog, ChatterLog, MessageLog, \
+        Broadcaster
 
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy import desc 
 
 import google.oauth2.credentials
 import google_auth_oauthlib.flow
@@ -77,6 +79,7 @@ def searchyt():
 #}}} 
 @app.route('/api/getchatid', methods=["POST"]) #{{{
 def getChatID():
+    response = {}
     # Process form {{{
     try:
         form        = request.get_json()
@@ -100,19 +103,35 @@ def getChatID():
     jwt = _refreshIdTokenIfNeeded(jwt, idInfo, credentials)
 
     #}}}
-    # {{{ Make API call and grab Chat ID
-    youtube = build('youtube', 'v3', credentials=credentials)
-    broadcast = youtube.videos().list(
-            part='id,liveStreamingDetails',
-            id=videoID
-    ).execute()
-    pprint.pprint(broadcast)
-    chatID = broadcast['items'][0]['liveStreamingDetails']['activeLiveChatId']
+    # {{{ Check database for stream info
+
+    stream = StreamLog.query.filter_by(video_id = videoID).first()
+    if not stream: 
+        # {{{ Make API call and grab Chat ID
+        youtube = build('youtube', 'v3', credentials=credentials)
+        broadcast = youtube.videos().list(
+                part='id,liveStreamingDetails,snippet',
+                id=videoID
+        ).execute()
+        #pprint.pprint(broadcast['items'][0]['snippet'])
+        broadcastInfo = broadcast['items'][0]
+        stream, broadcaster = _processBroadcastInfo(broadcastInfo)
+        # }}}
+    broadcaster = stream.streamer
+
+    chatID =  stream.chat_id
+    streamerName = broadcaster.channel_name
+    streamTitle = stream.video_title
+    streamDescription = stream.video_description
+
     # }}}
 
     response = {
-            'chatID'        :   chatID,
-            'jwt'           :   jwt
+            'chatID'            : chatID,
+            'streamerName'      : streamerName,
+            'streamTitle'       : streamTitle,
+            'streamDescription' : streamDescription,
+            'jwt'               : jwt,
             }
 
     return jsonify(response)
@@ -157,11 +176,11 @@ def getChatMsgs():
     ).execute()
     #pprint.pprint(chatMessages)
 
-    messageList = _processChatMessagesForClient(chatMessages['items'])
+    messageList = _processChatMessagesForClient(chatMessages, chatID)
     # }}}
 
     response = {
-            'messageList'            : messageList,
+            'messageList'           : messageList,
             'nextPageToken'         : chatMessages['nextPageToken'],
             'pollingIntervalMillis' : chatMessages['pollingIntervalMillis'],
             'jwt'                   : jwt
@@ -408,10 +427,12 @@ def _createNewUser(subToken, profile, credentials):#{{{
     db.session.add(u)
     db.session.add(c)
     db.session.commit()
+    '''
     print("User ID: ", u.id)
     print("Creds ID: ", c.id)
     print("User Reference Token: ", u.oauth_creds.token)
     print("Creds Reference Email: ", c.user.email)
+    '''
 
 
     return u
@@ -471,14 +492,18 @@ def _verifyJWTToken(jwt):#{{{
 
     return user, idInfo
 #}}}
-def _processChatMessagesForClient(messages):#{{{
+def _processChatMessagesForClient(messagesAPIResponse, chatID):#{{{
     '''
     Process the `items` returned by YouTube's liveChatMessageListResponse call
     and return a list of json/dict objects cleaner for the web client.
     '''
     messageList = []
+    #pprint.pprint(messagesAPIResponse)
+    stream = StreamLog.query.filter_by(chat_id = chatID).first()
+
+    messages = messagesAPIResponse['items']
     for item in messages:
-        pprint.pprint(item)
+        #pprint.pprint(item)
         messageDict = {
                 'msgID'             : item['id'],
                 'authorChannelID'   : item['authorDetails']['channelId'],
@@ -487,10 +512,75 @@ def _processChatMessagesForClient(messages):#{{{
                 'isOwner'           : item['authorDetails']['isChatOwner'],
                 'isSponsor'         : item['authorDetails']['isChatSponsor'],
                 'avatar'            : item['authorDetails']['profileImageUrl'],
-                'text'              : item['snippet']['displayMessage']
+                'text'              : item['snippet']['displayMessage'],
+                'timestamp'         : item['snippet']['publishedAt']
                 }
+
+        # Check database for author. Create if vacant.
+
+        author = ChatterLog.query.filter_by(
+                author_channel_id = messageDict['authorChannelID']).first()
+        if not author:
+            author = ChatterLog(
+                    author_channel_id = messageDict['authorChannelID'],
+                    author_name = messageDict['authorName'],
+                    avatar = messageDict['avatar']
+            )
+            db.session.add(author)
+
+        messageDBEntry = MessageLog.query.filter_by(
+                msg_id = messageDict['msgID']).first()
+        if not messageDBEntry:
+            messageDBEntry = MessageLog(
+                   author = author,
+                   stream = stream,
+                   msg_id = messageDict['msgID'],
+                   text = messageDict['text'], 
+                   timestamp = datetime.datetime.strptime(
+                       messageDict['timestamp'], "%Y-%m-%dT%H:%M:%S.%fZ"), 
+                   isMod = messageDict['isMod'],
+                   isOwner = messageDict['isOwner'],
+                   isSponsor = messageDict['isSponsor']
+
+            )
+            db.session.add(messageDBEntry)
         messageList.append(messageDict)
         
     return messageList
+
+#}}}
+def _processBroadcastInfo(broadcastInfo):#{{{
+    '''
+    Take in the broadcast information returned from YouTube, check if logs
+    exist in database of broadcast, broadcaster, and update database tables
+    if necessary.
+    '''
+    pprint.pprint(broadcastInfo)
+    # Retrieve broadcaster info from database. Create if vacant. {{{
+    broadcaster = Broadcaster.query.filter_by(
+            channel_id = broadcastInfo['snippet']['channelId']).first()
+    if not broadcaster:
+        broadcaster = Broadcaster(
+                channel_id = broadcastInfo['snippet']['channelId'],
+                channel_name = broadcastInfo['snippet']['channelTitle']
+        )
+        db.session.add(broadcaster)
+    # }}}
+    # Retrieve stream info from database. Create if vacant. # {{{
+    stream = StreamLog.query.filter_by(
+            video_id = broadcastInfo['id']).first()
+    if not stream:
+        stream = StreamLog(
+                video_id = broadcastInfo['id'],
+                video_title = broadcastInfo['snippet']['title'],
+                video_description = broadcastInfo['snippet']['description'],
+                chat_id = 
+                    broadcastInfo['liveStreamingDetails']['activeLiveChatId']
+        )
+        db.session.add(stream)
+        broadcaster.streams.append(stream)
+    #}}}
+    db.session.commit()
+    return stream, broadcaster
 
 #}}}

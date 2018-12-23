@@ -34,16 +34,23 @@ class OAuthCreds(db.Model): #{{{
 #}}}
 
 # {{{ Chat Log Section
-chatters_in_stream = db.Table('chatters_in_stream',
-        db.Column('stream_id', db.Integer, db.ForeignKey('stream_log.id')),
-        db.Column('chatter_id', db.Integer, db.ForeignKey('chatter_log.id'))
+chatters_in_stream = db.Table(
+        'chatters_in_stream',
+        db.Column(
+            'stream_id', 
+            db.Integer, 
+            db.ForeignKey('stream_log.video_id')),
+        db.Column(
+            'chatter_id', 
+            db.Integer, 
+            db.ForeignKey('chatter_log.author_channel_id'))
 )
-class Broadcaster(db.Model): # {{{
-    id = db.Column(db.Integer, primary_key=True)
 
-    channel_id = db.Column(db.String(512), nullable=False)
+class Broadcaster(db.Model): # {{{
+    #id = db.Column(db.Integer, primary_key=True)
+
+    channel_id = db.Column(db.String(512), primary_key=True)
     channel_name = db.Column(db.String(64), nullable=False)
-    avatar = db.Column(db.String(128), nullable=False)
 
     # Parent Relationships {{{
     streams = db.relationship('StreamLog', backref='streamer')
@@ -51,12 +58,12 @@ class Broadcaster(db.Model): # {{{
 
 #}}}
 class StreamLog(db.Model): #{{{
-    id = db.Column(db.Integer, primary_key=True)
+    #id = db.Column(db.Integer, primary_key=True)
+    video_id = db.Column(db.String(32), primary_key=True)
 
-    video_id = db.Column(db.String(32), unique=True, nullable=False)
-    video_title = db.Column(db.String(256), nullable=False)
-
-    video_description = db.Column(db.String(1024), nullable=False)
+    video_title = db.Column(db.String(100), nullable=False)
+    video_description = db.Column(db.String(5000), nullable=False)
+    chat_id = db.Column(db.String(32), unique=True, nullable=False)
 
     # {{{ Streams to Chatters Relationship
     '''
@@ -71,14 +78,17 @@ class StreamLog(db.Model): #{{{
     messages = db.relationship('MessageLog', backref='stream')
     #}}}
     # Child Relationships {{{
-    streamer_id = db.Column(db.Integer, db.ForeignKey('broadcaster.id'))
+    streamer_id = db.Column(
+            db.Integer, 
+            db.ForeignKey('broadcaster.channel_id')
+    )
     #}}}
 
 #}}}
 class ChatterLog(db.Model): #{{{
-    id = db.Column(db.Integer, primary_key=True)
+    #id = db.Column(db.Integer, primary_key=True)
 
-    author_channel_id = db.Column(db.String(512), nullable=False)
+    author_channel_id = db.Column(db.String(512), primary_key=True)
     author_name = db.Column(db.String(64), nullable=False)
     avatar = db.Column(db.String(128), nullable=False)
 
@@ -89,15 +99,19 @@ class ChatterLog(db.Model): #{{{
 
 #}}}
 class MessageLog(db.Model): #{{{
-    id = db.Column(db.Integer, primary_key=True)
+    #id = db.Column(db.Integer, primary_key=True)
 
-    msg_id = db.Column(db.String(512), unique=True, nullable=False)
+    msg_id = db.Column(db.String(512), primary_key=True)
     text = db.Column(db.String(512), nullable=False)
     timestamp = db.Column(db.DateTime(), nullable=False)
 
     # Stream and Author information {{{
-    stream_id = db.Column(db.Integer, db.ForeignKey('stream_log.id'))
-    author_id = db.Column(db.Integer, db.ForeignKey('chatter_log.id'))
+    stream_id = db.Column(
+            db.Integer, 
+            db.ForeignKey('stream_log.video_id'))
+    author_id = db.Column(
+            db.Integer, 
+            db.ForeignKey('chatter_log.author_channel_id'))
     #}}}
     # Relevant Author Tags {{{
     isMod = db.Column(db.Boolean())
