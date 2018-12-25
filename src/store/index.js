@@ -12,7 +12,7 @@ import {
   homePageSearchText,
   fetchChatMessages,
   sendChatMessage,
-  fetchVideoChatID } from '@/api'
+  fetchStreamInfo } from '@/api'
 // }}}
 
 Vue.use(Vuex)
@@ -91,10 +91,10 @@ const actions = { // {{{
       })
     })
   }, // }}}
-  grabVideoChatID(context, videoID){ // {{{
+  grabStreamInfo(context, videoID){ // {{{
     let jwt = localStorage.getItem('jwt')
     return new Promise((resolve, reject) => {
-      fetchVideoChatID(videoID, jwt)
+      fetchStreamInfo(videoID, jwt)
       .then((response) => {
         context.commit('setJWTToken',   { token: response.data.jwt }) 
         resolve(response.data)

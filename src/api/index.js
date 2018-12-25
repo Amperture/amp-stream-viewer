@@ -22,10 +22,10 @@ export function homePageSearchText(searchText, sortMethod, jwt){ //{{{
       jwt: jwt
     })
 } //}}}
-export function fetchVideoChatID(videoID, jwt){ //{{{
+export function fetchStreamInfo(videoID, jwt){ //{{{
   //console.log("GRABBING VIDEO CHAT ID WITH PARAMETERS")
   //console.log(videoID, jwt)
-  return axios.post(`${API_URL}/getchatid`, {
+  return axios.post(`${API_URL}/getstreaminfo`, {
       videoID: videoID,
       jwt: jwt
     })

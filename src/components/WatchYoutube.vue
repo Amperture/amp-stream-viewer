@@ -14,7 +14,8 @@
           allowfullscreen></iframe>
       </div>
       <div>
-        <h1>{{ streamTitle }}</h1>
+        <h1 class='title is-5'>{{ streamTitle }}</h1>
+        <h1 class='subtitle is-6'>by {{ streamerName }}</h1>
       </div>
     </div> <!-- }}} -->
     <!-- Chat Table {{{ -->
@@ -61,7 +62,9 @@ export default {
     return {
       documentFullWidth   : document.documentElement.clientWidth,
       streamID            : this.$route.query.watch,
-      streamTitle         : 'check',
+      streamTitle         : '',
+      streamDescription   : '',
+      streamerName        : '',
       liveChatID          : '',
       chatPolling         : null,
       chatNextPageToken   : null,
@@ -168,10 +171,13 @@ export default {
     this.$refs.chatBox.scrollTop = this.$refs.chatBox.scrollHeight
   }, // }}}
   created(){ // {{{
-    this.$store.dispatch('grabVideoChatID', this.streamID)
+    this.$store.dispatch('grabStreamInfo', this.streamID)
       .then((response) => {
         //console.log(response)
         this.liveChatID = response.chatID
+        this.streamTitle = response.streamTitle 
+        this.streamerName = response.streamerName 
+        this.streamDescription = response.streamDescription 
         //console.log("FRESH RETEIVE CHAT ID: ", this.liveChatID)
         this.pollChatMessages()
       })
@@ -197,5 +203,9 @@ tbody{
 .chat-box{
   font-family: Roboto, Arial, sans-serif;
   font-size: 13px;
+}
+
+.subtitle{
+  color: hsl(0, 0%, 71%);
 }
 </style> /* }}} */

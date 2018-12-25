@@ -78,7 +78,7 @@ def searchyt():
     return jsonify(response)
 
 #}}} 
-@app.route('/api/getchatid', methods=["POST"]) #{{{
+@app.route('/api/getstreaminfo', methods=["POST"]) #{{{
 def getChatID():
     response = {}
     # Process form {{{
