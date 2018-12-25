@@ -2,17 +2,24 @@
 <div>
   <AppHeader/>
   <div class='columns'>
-    <div class='column video-container'> <!-- Video Container {{{ -->
-      <iframe 
-        width="100%" 
-        :height="this.videoPlayerHeight" 
-        :src="this.youtubeEmbedURL" 
-        frameborder="0" 
-        allow="autoplay; encrypted-media" 
-        allowfullscreen></iframe>
+    <!-- Video Container and Info {{{ -->
+    <div class='column'>
+      <div class='video-container'>
+        <iframe 
+          width="100%" 
+          :height="this.videoPlayerHeight" 
+          :src="this.youtubeEmbedURL" 
+          frameborder="0" 
+          allow="autoplay; encrypted-media" 
+          allowfullscreen></iframe>
+      </div>
+      <div>
+        <h1>{{ streamTitle }}</h1>
+      </div>
     </div> <!-- }}} -->
-    <div class='column is-3'> <!-- Chat Table {{{--> 
-      <table class='table chat-box'>
+    <!-- Chat Table {{{ -->
+    <div v-if='chatEnabled == true' class='column is-3'>
+      <table ref='chatBox' class='table chat-box'>
         <tbody>
           <tr v-for="message in chatTable">
             <td>
@@ -33,6 +40,10 @@
         </div>
       </form><!--}}}-->
     </div> <!--}}}-->
+    <!-- Chat Disabled {{{ -->
+    <div v-else class='column is-3'>
+      <p>{{ chatEnabledReason }}</p>
+    </div> <!--}}}-->
   </div>
 </div>
 </template> <!--}}}-->
@@ -50,12 +61,15 @@ export default {
     return {
       documentFullWidth   : document.documentElement.clientWidth,
       streamID            : this.$route.query.watch,
-      liveChatID          : null,
+      streamTitle         : 'check',
+      liveChatID          : '',
       chatPolling         : null,
       chatNextPageToken   : null,
       chatNextInterval    : null,
       chatTable           : [],
-      chatActive          : true, // flag for chat polling
+      chatPollingActive   : true, // flag for chat polling
+      chatEnabled         : false,
+      chatEnabledReason   : "Hang on a hot second, I'm loading up the chat...",
       messageTextToSend   : null
     }
 
@@ -63,9 +77,9 @@ export default {
   computed: { // {{{
 
     youtubeEmbedURL : function() { // {{{
-      return 'https://www.youtube.com/embed/' + this.streamID;
+      return 'https://www.youtube.com/embed/' + this.streamID + "?autoplay=1"
     }, // }}}
-    videoPlayerHeight : function() {
+    videoPlayerHeight : function() { // {{{
       if(this.documentFullWidth < 768) {
         // If we're in mobile mode, video player will stack vertically with
         // chat. Just make the 16:9 conversion.
@@ -75,7 +89,7 @@ export default {
         // the window, so we need to also account for those pixels as well.
         return (this.documentFullWidth * (3/4) * (9/16))
       }
-    }
+    } // }}}
 
   }, // }}}
   methods: { // {{{ 
@@ -83,7 +97,7 @@ export default {
     addChatMessagesToTable(messageList){// {{{
       this.chatTable = this.chatTable.concat(messageList)
       if(this.chatTable.length > 50){
-        this.chatTable = this.chatTable.slice(-50);
+        this.chatTable = this.chatTable.slice(-50)
       }
     }, // }}}
     pollChatMessages(){ // {{{
@@ -95,20 +109,35 @@ export default {
       })
         .then((response) => {
           // Messages Successfully grabbed, start setting up next poll.
-          this.addChatMessagesToTable(response.messageList); 
+          this.addChatMessagesToTable(response.messageList)
+          this.chatEnabled = true
+          this.$nextTick(() => {
+            this.$refs.chatBox.scrollTop = this.$refs.chatBox.scrollHeight
+          })
+          this.chatNextInterval = response.pollingIntervalMillis
+          this.chatNextPageToken = response.nextPageToken
 
-          this.chatNextInterval = response.pollingIntervalMillis;
-          this.chatNextPageToken = response.nextPageToken;
-
-          if (this.chatActive == true){
+          if (this.chatPollingActive == true){
             this.chatPolling = setTimeout(() => {
-              this.pollChatMessages();
-            }, this.chatNextInterval);
+              this.pollChatMessages()
+            }, this.chatNextInterval)
           }
         })
-        .catch((error) => {
+        .catch((error) => { // {{{ 
+          console.log(error)
+          switch(error){
+            case 'http_error': // {{{
 
-        })
+              // If this is a simple http error, then it was likely just a 
+              // youtube problem, wait 5 seconds and try again.
+              this.chatPolling = setTimeout(() => {
+                this.pollChatMessages()
+              }, 5000)
+              break
+
+            // }}}
+          } 
+        }) // }}}
 
     }, // }}}
     handleSendChat(){ // {{{
@@ -118,7 +147,7 @@ export default {
           messageText : this.messageTextToSend
         })
         .then((response) => {
-          this.messageTextToSend = null;
+          this.messageTextToSend = null
         })
     }, // }}}
     handleResize(){ // {{{
@@ -132,14 +161,18 @@ export default {
     window.removeEventListener('resize', this.handleResize)
   }, // }}}
   mounted(){ // {{{
+    // Handling Window Resizing
     window.addEventListener('resize', this.handleResize)
+
+    // Make sure chat is scrolled to bottom of box at spawn.
+    this.$refs.chatBox.scrollTop = this.$refs.chatBox.scrollHeight
   }, // }}}
   created(){ // {{{
     this.$store.dispatch('grabVideoChatID', this.streamID)
       .then((response) => {
-        //console.log(response);
-        this.liveChatID = response.chatID;
-        //console.log("FRESH RETEIVE CHAT ID: ", this.liveChatID);
+        //console.log(response)
+        this.liveChatID = response.chatID
+        //console.log("FRESH RETEIVE CHAT ID: ", this.liveChatID)
         this.pollChatMessages()
       })
       .catch((error)  =>  {

@@ -4,7 +4,8 @@ import datetime
 
 class User(db.Model): #{{{
     id = db.Column(db.Integer, primary_key=True)
-    jwt_sub = db.Column(db.Integer, 
+    jwt_sub = db.Column(
+            db.String(64), 
             unique=True, 
             nullable=False
     )
@@ -34,18 +35,17 @@ class OAuthCreds(db.Model): #{{{
 #}}}
 
 # {{{ Chat Log Section
-chatters_in_stream = db.Table(
+chatters_in_stream = db.Table( #{{{
         'chatters_in_stream',
         db.Column(
             'stream_id', 
-            db.Integer, 
+            db.String(32), 
             db.ForeignKey('stream_log.video_id')),
         db.Column(
             'chatter_id', 
-            db.Integer, 
+            db.String(512), 
             db.ForeignKey('chatter_log.author_channel_id'))
-)
-
+) #}}}
 class Broadcaster(db.Model): # {{{
     #id = db.Column(db.Integer, primary_key=True)
 
@@ -59,11 +59,11 @@ class Broadcaster(db.Model): # {{{
 #}}}
 class StreamLog(db.Model): #{{{
     #id = db.Column(db.Integer, primary_key=True)
-    video_id = db.Column(db.String(32), primary_key=True)
+    video_id = db.Column(db.String(64), primary_key=True)
 
     video_title = db.Column(db.String(100), nullable=False)
     video_description = db.Column(db.String(5000), nullable=False)
-    chat_id = db.Column(db.String(32), unique=True, nullable=False)
+    chat_id = db.Column(db.String(64), unique=True, nullable=False)
 
     # {{{ Streams to Chatters Relationship
     '''
@@ -79,7 +79,7 @@ class StreamLog(db.Model): #{{{
     #}}}
     # Child Relationships {{{
     streamer_id = db.Column(
-            db.Integer, 
+            db.String(512), 
             db.ForeignKey('broadcaster.channel_id')
     )
     #}}}
@@ -107,10 +107,10 @@ class MessageLog(db.Model): #{{{
 
     # Stream and Author information {{{
     stream_id = db.Column(
-            db.Integer, 
+            db.String(32), 
             db.ForeignKey('stream_log.video_id'))
     author_id = db.Column(
-            db.Integer, 
+            db.String(512), 
             db.ForeignKey('chatter_log.author_channel_id'))
     #}}}
     # Relevant Author Tags {{{

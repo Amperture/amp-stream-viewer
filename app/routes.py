@@ -11,6 +11,7 @@ from app.models import User, OAuthCreds, StreamLog, ChatterLog, MessageLog, \
         Broadcaster
 
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.dialects.postgresql import insert 
 from sqlalchemy import desc 
 
 import google.oauth2.credentials
@@ -169,11 +170,17 @@ def getChatMsgs():
     #}}}
     # {{{ Make API Call to grab chat messages
     youtube = build('youtube', 'v3', credentials=credentials)
-    chatMessages = youtube.liveChatMessages().list(
-            part='id,snippet,authorDetails',
-            pageToken=chatNextPageToken,
-            liveChatId=chatID
-    ).execute()
+    try:
+        chatMessages = youtube.liveChatMessages().list(
+                part='id,snippet,authorDetails',
+                pageToken=chatNextPageToken,
+                liveChatId=chatID
+        ).execute()
+    except Exception as ex:
+        print(ex)
+        return jsonify({
+            'error':'http_error'
+            }), 500
     #pprint.pprint(chatMessages)
 
     messageList = _processChatMessagesForClient(chatMessages, chatID)
@@ -503,8 +510,8 @@ def _processChatMessagesForClient(messagesAPIResponse, chatID):#{{{
 
     messages = messagesAPIResponse['items']
     for item in messages:
-        #pprint.pprint(item)
-        messageDict = {
+        # Construct JSON Object/Dictionary of message to return to browser {{{
+        messageDict = { 
                 'msgID'             : item['id'],
                 'authorChannelID'   : item['authorDetails']['channelId'],
                 'authorName'        : item['authorDetails']['displayName'],
@@ -515,37 +522,40 @@ def _processChatMessagesForClient(messagesAPIResponse, chatID):#{{{
                 'text'              : item['snippet']['displayMessage'],
                 'timestamp'         : item['snippet']['publishedAt']
                 }
-
-        # Check database for author. Create if vacant.
-
-        author = ChatterLog.query.filter_by(
-                author_channel_id = messageDict['authorChannelID']).first()
-        if not author:
-            author = ChatterLog(
-                    author_channel_id = messageDict['authorChannelID'],
-                    author_name = messageDict['authorName'],
-                    avatar = messageDict['avatar']
-            )
-            db.session.add(author)
-
-        messageDBEntry = MessageLog.query.filter_by(
-                msg_id = messageDict['msgID']).first()
-        if not messageDBEntry:
-            messageDBEntry = MessageLog(
-                   author = author,
-                   stream = stream,
-                   msg_id = messageDict['msgID'],
-                   text = messageDict['text'], 
-                   timestamp = datetime.datetime.strptime(
-                       messageDict['timestamp'], "%Y-%m-%dT%H:%M:%S.%fZ"), 
-                   isMod = messageDict['isMod'],
-                   isOwner = messageDict['isOwner'],
-                   isSponsor = messageDict['isSponsor']
-
-            )
-            db.session.add(messageDBEntry)
+        print(messageDict['authorName'], messageDict['text'])
         messageList.append(messageDict)
-        
+        # }}}
+        # Upsert the author to the database {{{
+        authorInsertStatement = insert(ChatterLog).values(
+                author_channel_id = messageDict['authorChannelID'],
+                author_name = messageDict['authorName'],
+                avatar = messageDict['avatar']
+        ).on_conflict_do_update(
+                index_elements=['author_channel_id'],
+                set_= {
+                    'author_name' : messageDict['authorName'],
+                    'avatar' : messageDict['avatar']
+                    })
+        db.session.execute(authorInsertStatement) 
+        # }}}
+        # No-conflict-Insert the Message to the database {{{
+        msgInsertStatement = insert(MessageLog).values(
+                author_id = messageDict['authorChannelID'],
+                stream_id = stream.video_id,
+                msg_id = messageDict['msgID'],
+                text = messageDict['text'], 
+                timestamp = datetime.datetime.strptime(
+                    messageDict['timestamp'], "%Y-%m-%dT%H:%M:%S.%fZ"), 
+                isMod = messageDict['isMod'],
+                isOwner = messageDict['isOwner'],
+                isSponsor = messageDict['isSponsor']
+        ).on_conflict_do_nothing(
+                index_elements=['msg_id'])
+        db.session.execute(msgInsertStatement) 
+        # }}}
+
+    if len(messageList) > 0:
+        db.session.commit()
     return messageList
 
 #}}}
@@ -555,8 +565,13 @@ def _processBroadcastInfo(broadcastInfo):#{{{
     exist in database of broadcast, broadcaster, and update database tables
     if necessary.
     '''
-    pprint.pprint(broadcastInfo)
+    #pprint.pprint(broadcastInfo)
     # Retrieve broadcaster info from database. Create if vacant. {{{
+
+    '''
+    Theoretically these two DB operations could be more efficient as upserts.
+    This is worth looking into.
+    '''
     broadcaster = Broadcaster.query.filter_by(
             channel_id = broadcastInfo['snippet']['channelId']).first()
     if not broadcaster:
