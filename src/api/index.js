@@ -52,3 +52,12 @@ export function sendChatMessage( // {{{
       jwt: jwt
     })
 } // }}}
+export function fetchStreamStats( // {{{
+  videoID, 
+  jwt ){ 
+  //console.log(videoID, jwt)
+  return axios.post(`${API_URL}/getstreamstats`, {
+      videoID: videoID,
+      jwt: jwt
+    })
+} // }}}

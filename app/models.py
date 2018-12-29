@@ -33,7 +33,6 @@ class OAuthCreds(db.Model): #{{{
     scopes = db.Column(db.String(512), nullable=False)
 
 #}}}
-
 # {{{ Chat Log Section
 chatters_in_stream = db.Table( #{{{
         'chatters_in_stream',
@@ -45,7 +44,19 @@ chatters_in_stream = db.Table( #{{{
             'chatter_id', 
             db.String(512), 
             db.ForeignKey('chatter_log.author_channel_id'))
-) #}}}
+) 
+'''
+class ChattersInStream(db.Model):
+    stream_id = db.Column(
+            db.String(32), 
+            db.ForeignKey('stream_log.video_is'))
+
+    chatter_id = db.Column(
+            db.String(512), 
+            db.ForeignKey('stream_log.video_is'))
+'''
+# }}}
+
 class Broadcaster(db.Model): # {{{
     #id = db.Column(db.Integer, primary_key=True)
 
@@ -63,7 +74,7 @@ class StreamLog(db.Model): #{{{
 
     video_title = db.Column(db.String(100), nullable=False)
     video_description = db.Column(db.String(5000), nullable=False)
-    chat_id = db.Column(db.String(64), unique=True, nullable=False)
+    chat_id = db.Column(db.String(64), nullable=False)
 
     # {{{ Streams to Chatters Relationship
     '''
@@ -114,9 +125,9 @@ class MessageLog(db.Model): #{{{
             db.ForeignKey('chatter_log.author_channel_id'))
     #}}}
     # Relevant Author Tags {{{
-    isMod = db.Column(db.Boolean())
-    isOwner = db.Column(db.Boolean())
-    isSponsor = db.Column(db.Boolean())
+    is_mod = db.Column(db.Boolean())
+    is_owner = db.Column(db.Boolean())
+    is_sponsor = db.Column(db.Boolean())
     #}}}
 
 # }}}

@@ -11,6 +11,7 @@ import {
   authorizeUser,
   homePageSearchText,
   fetchChatMessages,
+  fetchStreamStats,
   sendChatMessage,
   fetchStreamInfo } from '@/api'
 // }}}
@@ -28,6 +29,7 @@ const state = {  //{{{
   userLoggedIn: false,
 } //}}}
 const actions = { // {{{ 
+
   loadUserInfo(context) { // {{{
     let jwt = localStorage.getItem('jwt')
     return new Promise((resolve, reject) => {
@@ -105,6 +107,21 @@ const actions = { // {{{
       })
     })
   }, // }}}
+  grabStreamStats(context, {videoID}){ // {{{
+    let jwt = localStorage.getItem('jwt')
+    return new Promise((resolve, reject) => {
+      fetchStreamStats(videoID, jwt)
+      .then((response) => {
+        //console.log(response.data)
+        context.commit('setJWTToken',   { token: response.data.jwt }) 
+        resolve(response.data)
+      })
+      .catch((error) => {
+        console.log("STREAM STATS ERROR: ", error)
+        reject(error)
+      })
+    })
+  }, // }}}
   getLiveChatMessages(context, {chatID, chatNextPageToken}){ // {{{
     let jwt = localStorage.getItem('jwt')
     //console.log("Action for Polling Chat Messages")
@@ -147,6 +164,7 @@ const actions = { // {{{
 
     });
   }, // }}}
+
 } // }}}
 const mutations = {  // {{{
   setUserName(state, payload){ // {{{

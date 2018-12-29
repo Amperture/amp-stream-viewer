@@ -16,12 +16,15 @@
       <div>
         <h1 class='title is-5'>{{ streamTitle }}</h1>
         <h1 class='subtitle is-6'>by {{ streamerName }}</h1>
+        <router-link
+          :to="{ name : 'YoutubeStreamStats', query : { watch : this.streamID } }">
+          View Stream/Chat Stats</router-link>
       </div>
     </div> <!-- }}} -->
     <!-- Chat Table {{{ -->
     <div v-if='chatEnabled == true' class='column is-3'>
-      <table ref='chatBox' class='table chat-box'>
-        <tbody>
+      <table class='table chat-box'>
+        <tbody ref='chatBox'>
           <tr v-for="message in chatTable">
             <td>
               <figure class='image is-24x24'>
@@ -159,8 +162,10 @@ export default {
 
   }, // }}}
   beforeDestroy(){ // {{{
-    this.chatActive = false // Disable chat polling.
-    // clearTimeout(this.chatPolling)
+    // Disable chat polling.
+    this.chatPollingActive = false
+    clearTimeout(this.chatPolling)
+
     window.removeEventListener('resize', this.handleResize)
   }, // }}}
   mounted(){ // {{{
@@ -190,10 +195,14 @@ export default {
 
 </script> /* }}} */
 <style> /* {{{ */
-tbody{
-  display: block;
+table {
+  width: 100%;
+}
+tbody {
+  display: block; 
   min-height: 360px;
   max-height: 720px;
+  width: 100%;
   overflow-y: auto;
   overflow-x: auto;
   position: relative;

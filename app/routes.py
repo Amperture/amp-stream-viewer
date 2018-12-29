@@ -8,9 +8,10 @@ from flask import redirect, url_for, jsonify, request, send_file
 from flask_login import login_required, login_user, logout_user, current_user
 
 from app.models import User, OAuthCreds, StreamLog, ChatterLog, MessageLog, \
-        Broadcaster
+        Broadcaster, chatters_in_stream
 
-from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.orm.exc import NoResultFound, FlushError
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.dialects.postgresql import insert 
 from sqlalchemy import desc 
 
@@ -64,10 +65,11 @@ def searchyt():
             part='id,snippet',
             q=search_text,
             type='video',
+            relevanceLanguage='en',
             order=sort_method,
             eventType='live'
     ).execute()
-    pprint.pprint(searchResponse)
+    #pprint.pprint(searchResponse)
     #}}}
 
     response = {
@@ -118,7 +120,8 @@ def getChatID():
         broadcastInfo = broadcast['items'][0]
         stream, broadcaster = _processBroadcastInfo(broadcastInfo)
         # }}}
-    broadcaster = stream.streamer
+    else:
+        broadcaster = stream.streamer
 
     chatID =  stream.chat_id
     streamerName = broadcaster.channel_name
@@ -138,23 +141,19 @@ def getChatID():
     return jsonify(response)
 
 #}}} 
-@app.route('/api/getchatmsgs', methods=["POST"]) #{{{
-def getChatMsgs():
+@app.route('/api/getstreamstats', methods=["POST"]) #{{{
+def getStreamStats():
     # Process form {{{
     try:
-        form                = request.get_json()
-        jwt                 = form['jwt']
-        chatID              = form['chatID']
-        chatNextPageToken   = ''
-        if 'chatNextPageToken' in form:
-            chatNextPageToken = form['chatNextPageToken']
+        form        = request.get_json()
+        jwt         = form['jwt']
+        videoID     = form['videoID']
     except:
         return jsonify({
             'error': "empty_request"
-            }), 500 
-
-    #}}}
+            }), 500 # }}}
     #{{{ Verify Identity and Grab Credentials For API Call
+
     try:
         user, idInfo = _verifyJWTToken(jwt)
         credentials = _dbToCreds(user.oauth_creds.id)
@@ -168,32 +167,42 @@ def getChatMsgs():
     jwt = _refreshIdTokenIfNeeded(jwt, idInfo, credentials)
 
     #}}}
-    # {{{ Make API Call to grab chat messages
-    youtube = build('youtube', 'v3', credentials=credentials)
+    # {{{ Check database for stream stats
+
+    print("Attempting database grab")
     try:
-        chatMessages = youtube.liveChatMessages().list(
-                part='id,snippet,authorDetails',
-                pageToken=chatNextPageToken,
-                liveChatId=chatID
-        ).execute()
+        stream = StreamLog.query.filter_by(video_id = videoID).first()
+        if not stream:
+            return jsonify({
+                'error' : 'stream_info_not_found'
+            }), 500
     except Exception as ex:
         print(ex)
-        return jsonify({
-            'error':'http_error'
-            }), 500
-    #pprint.pprint(chatMessages)
+    print("database grabbed")
 
-    messageList = _processChatMessagesForClient(chatMessages, chatID)
     # }}}
 
+    try:
+        numChatters = ChatterLog.query\
+                .join(ChatterLog.stream)\
+                .filter_by(video_id = videoID)\
+                .count()
+    except Exception as ex:
+        print(ex)
+
+    try:
+        chatActivityRank = _rankChatters(videoID)
+    except Exception as ex:
+        print(ex)
+    
     response = {
-            'messageList'           : messageList,
-            'nextPageToken'         : chatMessages['nextPageToken'],
-            'pollingIntervalMillis' : chatMessages['pollingIntervalMillis'],
-            'jwt'                   : jwt
+            'jwt'               : jwt,
+            'numChatters'       : numChatters,
+            'streamTitle'       : stream.video_title,
+            'streamerName'      : stream.streamer.channel_name,
+            'chatActivityRank'  : chatActivityRank
             }
 
-    #pprint.pprint(response)
     return jsonify(response)
 
 #}}} 
@@ -338,6 +347,65 @@ def authUser():
     return jsonify(browserProfileData)
 
 #}}}
+@app.route('/api/getchatmsgs', methods=["POST"]) #{{{
+def getChatMsgs():
+    # Process form {{{
+    try:
+        form                = request.get_json()
+        jwt                 = form['jwt']
+        chatID              = form['chatID']
+        chatNextPageToken   = ''
+        if 'chatNextPageToken' in form:
+            chatNextPageToken = form['chatNextPageToken']
+    except:
+        return jsonify({
+            'error': "empty_request"
+            }), 500 
+
+    #}}}
+    #{{{ Verify Identity and Grab Credentials For API Call
+    try:
+        user, idInfo = _verifyJWTToken(jwt)
+        credentials = _dbToCreds(user.oauth_creds.id)
+        #print(credentials)
+        #print(user.email)
+    except:
+        return jsonify({
+            'error' : 'invalid_token'
+            }), 500
+
+    jwt = _refreshIdTokenIfNeeded(jwt, idInfo, credentials)
+
+    #}}}
+    # {{{ Make API Call to grab chat messages
+    youtube = build('youtube', 'v3', credentials=credentials)
+    try:
+        chatMessages = youtube.liveChatMessages().list(
+                part='id,snippet,authorDetails',
+                pageToken=chatNextPageToken,
+                liveChatId=chatID
+        ).execute()
+    except Exception as ex:
+        print(ex)
+        return jsonify({
+            'error':'http_error'
+            }), 500
+    #pprint.pprint(chatMessages)
+
+    messageList = _processChatMessagesForClient(chatMessages, chatID)
+    # }}}
+
+    response = {
+            'messageList'           : messageList,
+            'nextPageToken'         : chatMessages['nextPageToken'],
+            'pollingIntervalMillis' : chatMessages['pollingIntervalMillis'],
+            'jwt'                   : jwt
+            }
+
+    #pprint.pprint(response)
+    return jsonify(response)
+
+#}}} 
 @app.route('/api/userinfo', methods=["POST"]) #{{{
 def userInfo(): 
     '''
@@ -522,23 +590,44 @@ def _processChatMessagesForClient(messagesAPIResponse, chatID):#{{{
                 'text'              : item['snippet']['displayMessage'],
                 'timestamp'         : item['snippet']['publishedAt']
                 }
-        print(messageDict['authorName'], messageDict['text'])
+        #print(messageDict['authorName'], messageDict['text'])
         messageList.append(messageDict)
         # }}}
         # Upsert the author to the database {{{
-        authorInsertStatement = insert(ChatterLog).values(
+        author = ChatterLog(
                 author_channel_id = messageDict['authorChannelID'],
                 author_name = messageDict['authorName'],
                 avatar = messageDict['avatar']
-        ).on_conflict_do_update(
-                index_elements=['author_channel_id'],
-                set_= {
-                    'author_name' : messageDict['authorName'],
-                    'avatar' : messageDict['avatar']
-                    })
-        db.session.execute(authorInsertStatement) 
+                )
+        try:
+            db.session.add(author)
+            db.session.commit()
+        except IntegrityError:
+            #print("Author already known, skipping.")
+            db.session.rollback()
+        except FlushError:
+            #print("Author already known, skipping.")
+            db.session.rollback()
+        except Exception as ex:
+            #print(ex)
+            db.session.rollback()
+
+        # }}}
+        # Append author to stream as chatter. {{{
+
+        try:
+            stream.chatters.append(author)
+            db.session.commit()
+        except FlushError or IntegrityError:
+            #print("Chatter already recorded in chat session, skipping.")
+            db.session.rollback()
+        except Exception as ex:
+            #print(ex)
+            db.session.rollback()
+
         # }}}
         # No-conflict-Insert the Message to the database {{{
+        '''
         msgInsertStatement = insert(MessageLog).values(
                 author_id = messageDict['authorChannelID'],
                 stream_id = stream.video_id,
@@ -552,10 +641,30 @@ def _processChatMessagesForClient(messagesAPIResponse, chatID):#{{{
         ).on_conflict_do_nothing(
                 index_elements=['msg_id'])
         db.session.execute(msgInsertStatement) 
+        '''
+        message = MessageLog(
+                stream_id = stream.video_id,
+                author_id = author.author_channel_id,
+                msg_id = messageDict['msgID'],
+                text = messageDict['text'], 
+                timestamp = datetime.datetime.strptime(
+                    messageDict['timestamp'], "%Y-%m-%dT%H:%M:%S.%fZ"), 
+                is_mod = messageDict['isMod'],
+                is_owner = messageDict['isOwner'],
+                is_sponsor = messageDict['isSponsor']
+                )
+        try:
+            db.session.add(message)
+            db.session.commit()
+        except IntegrityError or FlushError as ex:
+            print(ex)
+            print("Chatlog already found, skipping")
+            db.session.rollback()
+        except Exception as ex:
+            print(ex)
+            db.session.rollback()
         # }}}
 
-    if len(messageList) > 0:
-        db.session.commit()
     return messageList
 
 #}}}
@@ -579,7 +688,12 @@ def _processBroadcastInfo(broadcastInfo):#{{{
                 channel_id = broadcastInfo['snippet']['channelId'],
                 channel_name = broadcastInfo['snippet']['channelTitle']
         )
-        db.session.add(broadcaster)
+        try: 
+            db.session.add(broadcaster)
+            db.session.commit()
+        except Exception as ex:
+            print(ex)
+            db.session.rollback()
     # }}}
     # Retrieve stream info from database. Create if vacant. # {{{
     stream = StreamLog.query.filter_by(
@@ -589,13 +703,47 @@ def _processBroadcastInfo(broadcastInfo):#{{{
                 video_id = broadcastInfo['id'],
                 video_title = broadcastInfo['snippet']['title'],
                 video_description = broadcastInfo['snippet']['description'],
+                streamer_id = broadcaster.channel_id,
                 chat_id = 
                     broadcastInfo['liveStreamingDetails']['activeLiveChatId']
         )
-        db.session.add(stream)
-        broadcaster.streams.append(stream)
+        try: 
+            db.session.add(stream)
+            db.session.commit()
+        except Exception as ex:
+            print(ex)
+            db.session.rollback()
     #}}}
-    db.session.commit()
     return stream, broadcaster
 
 #}}}
+def _rankChatters(videoID):#{{{
+    '''
+    Run a query and search for the most active chatters in a stream.
+    '''
+    messageRanks = []
+
+    r = db.session.query(
+            db.func.count(MessageLog.author_id),
+            ChatterLog.author_name,
+            ChatterLog.avatar
+            )\
+        .join(ChatterLog, 
+                MessageLog.author_id == ChatterLog.author_channel_id)\
+        .filter(MessageLog.stream_id == videoID)\
+        .group_by(ChatterLog.author_channel_id)\
+        .order_by(desc(db.func.count(MessageLog.author_id)))\
+        .limit(5).all() 
+
+    for result in r:
+        rankedMessage = {
+                'numMessages'   : result[0],
+                'name'          : result[1],
+                'avatar'        : result[2] 
+        }
+        messageRanks.append(rankedMessage)
+    return messageRanks
+
+
+#}}}
+
