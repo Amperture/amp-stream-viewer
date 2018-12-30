@@ -15,9 +15,11 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.dialects.postgresql import insert 
 from sqlalchemy import desc 
 
-import google.oauth2.credentials
 import google_auth_oauthlib.flow
+import google.oauth2.credentials
+
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 from google.oauth2 import id_token
 from google.auth.transport import requests
 
@@ -27,6 +29,14 @@ import json
 import os
 
 #}}}
+
+COMMON_ERRORS = { # {{{
+        'backendError'      : "yt_backend_error",
+        'liveChatEnded'     : 'chat_ended',
+        'liveChatNotFound'  : 'chat_not_found',
+        'liveChatDisabled'  : 'chat_disabled',
+        }
+# }}}
 
 @app.route('/api/searchyt', methods=["POST"]) #{{{
 def searchyt():
@@ -60,15 +70,29 @@ def searchyt():
 
     #}}}
     #{{{ Create Youtube stream search API and execute
-    youtube = build('youtube', 'v3', credentials=credentials)
-    searchResponse = youtube.search().list(
-            part='id,snippet',
-            q=search_text,
-            type='video',
-            relevanceLanguage='en',
-            order=sort_method,
-            eventType='live'
-    ).execute()
+    try:
+        youtube = build('youtube', 'v3', credentials=credentials)
+        searchResponse = youtube.search().list(
+                part='id,snippet',
+                q=search_text,
+                type='video',
+                relevanceLanguage='en',
+                order=sort_method,
+                eventType='live'
+        ).execute()
+    except HttpError as ex:
+        contentJSON = json.loads(ex.content)
+        errorDetail = contentJSON['error']['errors'][0]['reason']
+        if errorDetail in COMMON_ERRORS.keys():
+            return jsonify({
+                'error' : COMMON_ERRORS[errorDetail]
+                }), ex.resp.status
+        else:
+            print(ex)
+            return jsonify({
+                'error' : 'unknown_error'
+                }), 500
+        
     #pprint.pprint(searchResponse)
     #}}}
 
@@ -106,19 +130,32 @@ def getChatID():
     jwt = _refreshIdTokenIfNeeded(jwt, idInfo, credentials)
 
     #}}}
-    # {{{ Check database for stream info
+    # {{{ Check database for stream info, pull from YT API if not found.
 
     stream = StreamLog.query.filter_by(video_id = videoID).first()
     if not stream: 
         # {{{ Make API call and grab Chat ID
-        youtube = build('youtube', 'v3', credentials=credentials)
-        broadcast = youtube.videos().list(
-                part='id,liveStreamingDetails,snippet',
-                id=videoID
-        ).execute()
-        #pprint.pprint(broadcast['items'][0]['snippet'])
-        broadcastInfo = broadcast['items'][0]
-        stream, broadcaster = _processBroadcastInfo(broadcastInfo)
+        try:
+            youtube = build('youtube', 'v3', credentials=credentials)
+            broadcast = youtube.videos().list(
+                    part='id,liveStreamingDetails,snippet',
+                    id=videoID
+            ).execute()
+            #pprint.pprint(broadcast['items'][0]['snippet'])
+            broadcastInfo = broadcast['items'][0]
+            stream, broadcaster = _processBroadcastInfo(broadcastInfo)
+        except HttpError as ex:
+            contentJSON = json.loads(ex.content)
+            errorDetail = contentJSON['error']['errors'][0]['reason']
+            if errorDetail in COMMON_ERRORS.keys():
+                return jsonify({
+                    'error' : COMMON_ERRORS[errorDetail]
+                    }), ex.resp.status
+            else:
+                print(ex)
+                return jsonify({
+                    'error' : 'unknown_error'
+                    }), 500
         # }}}
     else:
         broadcaster = stream.streamer
@@ -169,7 +206,6 @@ def getStreamStats():
     #}}}
     # {{{ Check database for stream stats
 
-    print("Attempting database grab")
     try:
         stream = StreamLog.query.filter_by(video_id = videoID).first()
         if not stream:
@@ -178,7 +214,6 @@ def getStreamStats():
             }), 500
     except Exception as ex:
         print(ex)
-    print("database grabbed")
 
     # }}}
 
@@ -235,18 +270,33 @@ def sendChatMSG():
 
     #}}}
     # {{{ Make API to send Chat Message
-    youtube = build('youtube', 'v3', credentials=credentials)
-    messageSent = youtube.liveChatMessages().insert(
-            part='snippet',
-            body={
-                'snippet' : {
-                    'liveChatId'            : chatID,
-                    'type'                  : 'textMessageEvent',
-                    'textMessageDetails'    : { 'messageText' : messageText }
+    try:
+        youtube = build('youtube', 'v3', credentials=credentials)
+        messageSent = youtube.liveChatMessages().insert(
+                part='snippet',
+                body={
+                    'snippet' : {
+                        'liveChatId'            : chatID,
+                        'type'                  : 'textMessageEvent',
+                        'textMessageDetails'    : { 
+                            'messageText' : messageText 
+                            }
+                        }
                     }
-                }
-    ).execute()
-    pprint.pprint(messageSent)
+        ).execute()
+        #pprint.pprint(messageSent)
+    except HttpError as ex:
+        contentJSON = json.loads(ex.content)
+        errorDetail = contentJSON['error']['errors'][0]['reason']
+        if errorDetail in COMMON_ERRORS.keys():
+            return jsonify({
+                'error' : COMMON_ERRORS[errorDetail]
+                }), ex.resp.status
+        else:
+            print(ex)
+            return jsonify({
+                'error' : 'unknown_error'
+                }), 500
 
     # }}}
 
@@ -353,6 +403,7 @@ def getChatMsgs():
     try:
         form                = request.get_json()
         jwt                 = form['jwt']
+        videoID             = form['videoID']
         chatID              = form['chatID']
         chatNextPageToken   = ''
         if 'chatNextPageToken' in form:
@@ -385,14 +436,20 @@ def getChatMsgs():
                 pageToken=chatNextPageToken,
                 liveChatId=chatID
         ).execute()
-    except Exception as ex:
-        print(ex)
-        return jsonify({
-            'error':'http_error'
-            }), 500
+    except HttpError as ex:
+        contentJSON = json.loads(ex.content)
+        errorDetail = contentJSON['error']['errors'][0]['reason']
+        if errorDetail in COMMON_ERRORS.keys():
+            return jsonify({
+                'error' : COMMON_ERRORS[errorDetail]
+                }), ex.resp.status
+        else:
+            return jsonify({
+                'error' : 'unknown_error'
+                }), 500
     #pprint.pprint(chatMessages)
 
-    messageList = _processChatMessagesForClient(chatMessages, chatID)
+    messageList = _processChatMessagesForClient(chatMessages, videoID)
     # }}}
 
     response = {
@@ -421,7 +478,7 @@ def userInfo():
             'avatar' : user.avatar,
             'loggedIn' : True
         }
-        print(sendback)
+        #print(sendback)
         return jsonify(sendback)
     except:
         return jsonify({
@@ -448,6 +505,16 @@ def googleAuth():
             )
 
     return redirect(authorization_url, code=302)
+
+#}}}
+@app.route('/api/errortest', methods=["GET"]) #{{{
+def errortest():
+    '''
+    Google OAuth Redirect
+    '''
+    return jsonify({
+        'error' : 'test_error'
+        }), 500
 
 #}}}
 
@@ -520,7 +587,7 @@ def _refreshIdTokenIfNeeded(jwt, idInfo, credentials):#{{{
     now = datetime.datetime.now()
     exp = datetime.datetime.fromtimestamp(idInfo['exp'])
     delta = exp - now
-    if(delta >= datetime.timedelta(minutes=15)):
+    if(delta <= datetime.timedelta(minutes=15)):
         '''
         print("ACCESS TOKEN: ", credentials.token) 
         print("ID_TOKEN: ", credentials.id_token) 
@@ -567,29 +634,33 @@ def _verifyJWTToken(jwt):#{{{
 
     return user, idInfo
 #}}}
-def _processChatMessagesForClient(messagesAPIResponse, chatID):#{{{
+def _processChatMessagesForClient(messagesAPIResponse, videoID):#{{{
     '''
     Process the `items` returned by YouTube's liveChatMessageListResponse call
     and return a list of json/dict objects cleaner for the web client.
     '''
     messageList = []
     #pprint.pprint(messagesAPIResponse)
-    stream = StreamLog.query.filter_by(chat_id = chatID).first()
+    stream = StreamLog.query.filter_by(video_id = videoID).first()
 
     messages = messagesAPIResponse['items']
     for item in messages:
         # Construct JSON Object/Dictionary of message to return to browser {{{
-        messageDict = { 
-                'msgID'             : item['id'],
-                'authorChannelID'   : item['authorDetails']['channelId'],
-                'authorName'        : item['authorDetails']['displayName'],
-                'isMod'             : item['authorDetails']['isChatModerator'],
-                'isOwner'           : item['authorDetails']['isChatOwner'],
-                'isSponsor'         : item['authorDetails']['isChatSponsor'],
-                'avatar'            : item['authorDetails']['profileImageUrl'],
-                'text'              : item['snippet']['displayMessage'],
-                'timestamp'         : item['snippet']['publishedAt']
-                }
+        try:
+            messageDict = { 
+                    'msgID'             : item['id'],
+                    'authorChannelID'   : item['authorDetails']['channelId'],
+                    'authorName'        : item['authorDetails']['displayName'],
+                    'isMod'             : item['authorDetails']['isChatModerator'],
+                    'isOwner'           : item['authorDetails']['isChatOwner'],
+                    'isSponsor'         : item['authorDetails']['isChatSponsor'],
+                    'avatar'            : item['authorDetails']['profileImageUrl'],
+                    'text'              : item['snippet']['displayMessage'],
+                    'timestamp'         : item['snippet']['publishedAt']
+                    }
+        except Exception as ex:
+            pprint.pprint(item)
+            print(ex)
         #print(messageDict['authorName'], messageDict['text'])
         messageList.append(messageDict)
         # }}}
@@ -626,22 +697,7 @@ def _processChatMessagesForClient(messagesAPIResponse, chatID):#{{{
             db.session.rollback()
 
         # }}}
-        # No-conflict-Insert the Message to the database {{{
-        '''
-        msgInsertStatement = insert(MessageLog).values(
-                author_id = messageDict['authorChannelID'],
-                stream_id = stream.video_id,
-                msg_id = messageDict['msgID'],
-                text = messageDict['text'], 
-                timestamp = datetime.datetime.strptime(
-                    messageDict['timestamp'], "%Y-%m-%dT%H:%M:%S.%fZ"), 
-                isMod = messageDict['isMod'],
-                isOwner = messageDict['isOwner'],
-                isSponsor = messageDict['isSponsor']
-        ).on_conflict_do_nothing(
-                index_elements=['msg_id'])
-        db.session.execute(msgInsertStatement) 
-        '''
+        # Insert the Message to the database {{{
         message = MessageLog(
                 stream_id = stream.video_id,
                 author_id = author.author_channel_id,
@@ -657,8 +713,8 @@ def _processChatMessagesForClient(messagesAPIResponse, chatID):#{{{
             db.session.add(message)
             db.session.commit()
         except IntegrityError or FlushError as ex:
-            print(ex)
-            print("Chatlog already found, skipping")
+            #print(ex)
+            #print("Chatlog already found, skipping")
             db.session.rollback()
         except Exception as ex:
             print(ex)

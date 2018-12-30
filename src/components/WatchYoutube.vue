@@ -46,7 +46,7 @@
     </div> <!--}}}-->
     <!-- Chat Disabled {{{ -->
     <div v-else class='column is-3'>
-      <p>{{ chatEnabledReason }}</p>
+      <p>{{ reasons[chatEnabledReason] }}</p>
     </div> <!--}}}-->
   </div>
 </div>
@@ -75,8 +75,15 @@ export default {
       chatTable           : [],
       chatPollingActive   : true, // flag for chat polling
       chatEnabled         : false,
-      chatEnabledReason   : "Hang on a hot second, I'm loading up the chat...",
+      chatEnabledReason   : 'loading',
+      reasons             : {
+         'loading'          : "Hang on a hot second, I'm loading the chat...",
+         'chat_disabled'    : "This streamer went and disabled chat, that's too bad!",
+         'chat_not_found'   : "I don't think this is a live video, I can't find chat!",
+         'chat_ended'       : "Alright, fun's over. Chat's ended. We're done here!",
+      },
       messageTextToSend   : null
+
     }
 
   }, // }}}
@@ -109,11 +116,12 @@ export default {
     pollChatMessages(){ // {{{
       // Dispatch Action to Grab Chat Messages
       //console.log("Polling for Chat Messages")
-      this.$store.dispatch('getLiveChatMessages', {
+      this.$store.dispatch('grabLiveChatMessages', {
         chatID              : this.liveChatID,
+        videoID             : this.streamID,
         chatNextPageToken   : this.chatNextPageToken
       })
-        .then((response) => {
+        .then((response) => { // {{{
           // Messages Successfully grabbed, start setting up next poll.
           this.addChatMessagesToTable(response.messageList)
           this.chatEnabled = true
@@ -128,17 +136,45 @@ export default {
               this.pollChatMessages()
             }, this.chatNextInterval)
           }
-        })
+        }) // }}}
         .catch((error) => { // {{{ 
-          console.log(error)
-          switch(error){
-            case 'http_error': // {{{
+          console.log(error.status)
+          console.log(error.response.data)
+          switch(error.response.data.error){
+            case 'yt_backend_error': // {{{
 
               // If this is a simple http error, then it was likely just a 
               // youtube problem, wait 5 seconds and try again.
               this.chatPolling = setTimeout(() => {
                 this.pollChatMessages()
               }, 5000)
+              break
+
+            // }}}
+            case 'invalid_token': // {{{
+
+              // User was logged out or sent an invalid token somehow.
+              // Send them back to Login Component.
+              this.$router.push('login') 
+              break
+
+            // }}}
+            case 'chat_ended': // {{{
+
+              // Looks like the chat is over.
+              this.chatEnabledReason = 'chat_ended'
+              break
+
+            // }}}
+            case 'chat_disabled': // {{{
+
+              this.chatEnabledReason = 'chat_disabled'
+              break
+
+            // }}}
+            case 'chat_not_found': // {{{
+
+              this.chatEnabledReason = 'chat_not_found'
               break
 
             // }}}

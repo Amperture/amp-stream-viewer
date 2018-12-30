@@ -8,6 +8,7 @@ import Vuex from 'vuex'
 // Imports of AJAX Functions {{{
 import { 
   fetchUserInfo, 
+  fetchErrorTest, 
   authorizeUser,
   homePageSearchText,
   fetchChatMessages,
@@ -122,7 +123,7 @@ const actions = { // {{{
       })
     })
   }, // }}}
-  getLiveChatMessages(context, {chatID, chatNextPageToken}){ // {{{
+  grabLiveChatMessages(context, {chatID, videoID, chatNextPageToken}){ // {{{
     let jwt = localStorage.getItem('jwt')
     //console.log("Action for Polling Chat Messages")
     //console.log("JWT: ", jwt)
@@ -130,7 +131,7 @@ const actions = { // {{{
     //console.log("ChatNextPageToken: ", chatNextPageToken)
 
     return new Promise((resolve, reject) => {
-      fetchChatMessages(chatID, chatNextPageToken, jwt)
+      fetchChatMessages(chatID, videoID, chatNextPageToken, jwt)
       .then((response) => {
         //console.log(response.data)
         context.commit('setJWTToken',   { token: response.data.jwt }) 
@@ -159,6 +160,23 @@ const actions = { // {{{
       })
       .catch((error) => {
         console.log("MESSAGES ERROR: ", error)
+        reject(error)
+      });
+
+    });
+  }, // }}}
+  pollError(context){ // {{{
+    return new Promise((resolve, reject) => {
+      fetchErrorTest()
+      .then((response) => {
+        console.log(response.data)
+        resolve(response.data)
+      })
+      .catch((error) => {
+        console.log("MESSAGES ERROR")
+        console.log("=====")
+        console.log(error.response)
+        console.log("=====")
         reject(error)
       });
 

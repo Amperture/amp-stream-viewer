@@ -32,13 +32,15 @@ export function fetchStreamInfo(videoID, jwt){ //{{{
 } //}}}
 export function fetchChatMessages( // {{{
   chatID, 
+  videoID, 
   chatNextPageToken, 
   jwt ){ 
   //console.log(chatID, chatNextPageToken, jwt)
   return axios.post(`${API_URL}/getchatmsgs`, {
-      chatID: chatID,
-      chatNextPageToken: chatNextPageToken,
-      jwt: jwt
+      chatID            : chatID,
+      videoID           : videoID,
+      chatNextPageToken : chatNextPageToken,
+      jwt               : jwt
     })
 } // }}}
 export function sendChatMessage( // {{{
@@ -60,4 +62,7 @@ export function fetchStreamStats( // {{{
       videoID: videoID,
       jwt: jwt
     })
+} // }}}
+export function fetchErrorTest(){ // {{{
+  return axios.get(`${API_URL}/errortest`)
 } // }}}

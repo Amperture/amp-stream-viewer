@@ -5,6 +5,7 @@ import Login from '@/components/Login'
 import SearchYoutube from '@/components/SearchYoutube'
 import WatchYoutube from '@/components/WatchYoutube'
 import YoutubeStreamStats from '@/components/YoutubeStreamStats'
+import ErrorTest from '@/components/ErrorTest'
 
 Vue.use(Router)
 
@@ -30,6 +31,11 @@ export default new Router({
       path: '/ytstats',
       name: 'YoutubeStreamStats',
       component: YoutubeStreamStats
+    },
+    {
+      path: '/errortest',
+      name: 'ErrorTest',
+      component: ErrorTest
     },
     {
       path: '/ytsearch',
