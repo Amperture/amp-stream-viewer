@@ -46,7 +46,7 @@ def searchyt():
     # Process form {{{
     try:
         form        = request.get_json()
-        jwt         = form['jwt']
+        jwt         = request.headers['Authorization']
         search_text = form['searchText']
         sort_method = form['sortMethod']
         #print("JWT TOKEN: ", jwt)
@@ -110,7 +110,7 @@ def getChatID():
     # Process form {{{
     try:
         form        = request.get_json()
-        jwt         = form['jwt']
+        jwt         = request.headers['Authorization']
         videoID     = form['videoID']
     except:
         return jsonify({
@@ -183,7 +183,7 @@ def getStreamStats():
     # Process form {{{
     try:
         form        = request.get_json()
-        jwt         = form['jwt']
+        jwt         = request.headers['Authorization']
         videoID     = form['videoID']
     except:
         return jsonify({
@@ -246,7 +246,7 @@ def sendChatMSG():
     # Process form {{{
     try:
         form        = request.get_json()
-        jwt         = form['jwt']
+        jwt         = request.headers['Authorization']
         chatID      = form['chatID']
         messageText = form['messageText']
     except:
@@ -402,7 +402,7 @@ def getChatMsgs():
     # Process form {{{
     try:
         form                = request.get_json()
-        jwt                 = form['jwt']
+        jwt                 = request.headers['Authorization']
         videoID             = form['videoID']
         chatID              = form['chatID']
         chatNextPageToken   = ''
@@ -468,8 +468,7 @@ def userInfo():
     '''
     Grab User Info from DB, requires JWT token as POST parameter.
     '''
-    data = request.get_json()
-    jwt = data['jwt']
+    jwt = request.headers['Authorization']
     try:
         user, idInfo = _verifyJWTToken(jwt)
         sendback = {
