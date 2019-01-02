@@ -268,7 +268,6 @@ def getStreamStats():
 
         numChattersFilter = numChattersFilter.distinct(MessageLog.author_id)
         numChattersFilterCount = numChattersFilter.count()
-        print(numChattersTotal, numChattersFilterCount)
 
     except Exception as ex:
         print(ex)
@@ -839,7 +838,8 @@ def _rankChatters(videoID, perPage, page, orderBy, incMods, incMembers) :#{{{
     query = db.session.query(
             db.func.count(MessageLog.author_id),
             ChatterLog.author_name,
-            ChatterLog.avatar
+            ChatterLog.avatar,
+            ChatterLog.author_channel_id,
             )\
         .join(ChatterLog, 
                 MessageLog.author_id == ChatterLog.author_channel_id)\
@@ -872,18 +872,42 @@ def _rankChatters(videoID, perPage, page, orderBy, incMods, incMembers) :#{{{
     #print(query)
 
     # }}}
- 
+    # Execute Main chatters Query {{{
     query = query.limit(perPage).offset(page * perPage)
-    r = query.all()
+    chatters = query.all()
+    # }}}
+    # Query for list of Mods and Sponsors {{{
+    modQuery = db.session.query(MessageLog.author_id)\
+            .filter(MessageLog.stream_id == videoID)\
+            .filter(MessageLog.is_mod == True)\
+            .distinct(MessageLog.author_id)
+    modList = [i[0] for i in modQuery.all()]
 
-    for result in r:
+    sponsorQuery = db.session.query(MessageLog.author_id)\
+            .filter(MessageLog.stream_id == videoID)\
+            .filter(MessageLog.is_sponsor == True)\
+            .distinct(MessageLog.author_id)
+    sponsorList = [i[0] for i in sponsorQuery.all()]
+    # }}}
+    # Prep and return list for client {{{ 
+    for result in chatters:
         rankedMessage = {
                 'numMessages'   : result[0],
                 'name'          : result[1],
-                'avatar'        : result[2] 
+                'avatar'        : result[2],
+                'isMod'         : False,
+                'isSponsor'     : False
         }
+
+        if result[3] in modList:
+            rankedMessage['isMod'] = True
+
+        if result[3] in sponsorList:
+            rankedMessage['isSponsor'] = True
+
         messageRanks.append(rankedMessage)
     return messageRanks
+    # }}}
 
 
 #}}}
