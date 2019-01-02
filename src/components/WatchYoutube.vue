@@ -24,7 +24,7 @@
     <!-- Chat Table {{{ -->
     <div v-if='chatEnabled == true' class='column is-3'>
       <table class='table chat-box'>
-        <tbody ref='chatBox'>
+        <tbody class='chat-table-body' ref='chatBox'>
           <tr v-for="message in chatTable">
             <td>
               <figure class='image is-24x24'>
@@ -222,10 +222,52 @@ export default {
         //console.log("FRESH RETEIVE CHAT ID: ", this.liveChatID)
         this.pollChatMessages()
       })
-      .catch((error)  =>  {
-        console.log("Something went wrong, apparently")
+      .catch((error) => { // {{{ 
 
-      }) 
+        console.log(error.status)
+        console.log(error.response.data)
+        switch(error.response.data.error){
+          case 'yt_backend_error': // {{{
+
+            // If this is a simple http error, then it was likely just a 
+            // youtube problem, wait 5 seconds and try again.
+            this.chatPolling = setTimeout(() => {
+              this.pollChatMessages()
+            }, 5000)
+            break
+
+          // }}}
+          case 'invalid_token': // {{{
+
+            // User was logged out or sent an invalid token somehow.
+            // Send them back to Login Component.
+            this.$router.push('login') 
+            break
+
+          // }}}
+          case 'chat_ended': // {{{
+
+            // Looks like the chat is over.
+            this.chatEnabledReason = 'chat_ended'
+            break
+
+          // }}}
+          case 'chat_disabled': // {{{
+
+            this.chatEnabledReason = 'chat_disabled'
+            break
+
+          // }}}
+          case 'chat_not_found': // {{{
+
+            this.chatEnabledReason = 'chat_not_found'
+            break
+
+          // }}}
+        } 
+
+      }) // }}}
+
   } // }}}
 }
 
@@ -234,7 +276,7 @@ export default {
 table {
   width: 100%;
 }
-tbody {
+.chat-table-body {
   display: block; 
   min-height: 360px;
   max-height: 720px;

@@ -24,6 +24,7 @@ from google.oauth2 import id_token
 from google.auth.transport import requests
 
 import datetime
+import pytz
 import pprint
 import json
 import os
@@ -144,6 +145,7 @@ def getChatID():
             #pprint.pprint(broadcast['items'][0]['snippet'])
             broadcastInfo = broadcast['items'][0]
             stream, broadcaster = _processBroadcastInfo(broadcastInfo)
+
         except HttpError as ex:
             contentJSON = json.loads(ex.content)
             errorDetail = contentJSON['error']['errors'][0]['reason']
@@ -156,6 +158,12 @@ def getChatID():
                 return jsonify({
                     'error' : 'unknown_error'
                     }), 500
+
+        except ValueError as ex: 
+            errorDetail = str(ex)
+            return jsonify({
+                'error' : COMMON_ERRORS[errorDetail]
+                }), 403
         # }}}
     else:
         broadcaster = stream.streamer
@@ -183,9 +191,24 @@ def getStreamStats():
     # Process form {{{
     try:
         form        = request.get_json()
-        jwt         = request.headers['Authorization']
+        # Required parameters
         videoID     = form['videoID']
-    except:
+        jwt         = request.headers['Authorization']
+        # Optional parameters
+        '''
+        `filtSponsors`  : Whether or not to include paid Members/Sponsors.
+        `filtMods`      : Whether or not to include chat Moderators.
+
+        The above 2 variables are optional and have two valid values.
+        `only` and `exclude`, if not found, Sponsors/Mods will be included.
+        '''
+        perPage         = form.get('perPage', 5)
+        page            = form.get('page', 0)
+        orderBy         = form.get('orderBy', 'numMessages desc')
+        filtSponsors    = form.get('filtSponsors', 'include')
+        filtMods        = form.get('filtMods', 'include')        
+    except Exception as ex:
+        print(ex)
         return jsonify({
             'error': "empty_request"
             }), 500 # }}}
@@ -216,23 +239,52 @@ def getStreamStats():
         print(ex)
 
     # }}}
+    # Grab Total Number of Chatters for the Stream {{{
 
     try:
-        numChatters = ChatterLog.query\
-                .join(ChatterLog.stream)\
-                .filter_by(video_id = videoID)\
+        numChattersTotal = MessageLog.query\
+                .filter_by(stream_id = videoID)\
+                .distinct(MessageLog.author_id)\
                 .count()
     except Exception as ex:
         print(ex)
 
+    # }}}
+    # Grab number of chatters fitting filter criteria {{{
+
     try:
-        chatActivityRank = _rankChatters(videoID)
+        numChattersFilter = MessageLog.query\
+                .filter_by(stream_id = videoID)
+
+        if filtSponsors == 'exclude':
+            numChattersFilter = numChattersFilter.filter_by(is_sponsor = False)
+        elif filtSponsors == 'only':
+            numChattersFilter = numChattersFilter.filter_by(is_sponsor = True)
+
+        if filtMods == 'exclude':
+            numChattersFilter = numChattersFilter.filter_by(is_mod = False)
+        elif filtMods == 'only':
+            numChattersFilter = numChattersFilter.filter_by(is_mod = True)
+
+        numChattersFilter = numChattersFilter.distinct(MessageLog.author_id)
+        numChattersFilterCount = numChattersFilter.count()
+        print(numChattersTotal, numChattersFilterCount)
+
+    except Exception as ex:
+        print(ex)
+
+    # }}}
+
+    try:
+        chatActivityRank = _rankChatters(
+                videoID, perPage, page, orderBy, filtMods, filtSponsors)
     except Exception as ex:
         print(ex)
     
     response = {
             'jwt'               : jwt,
-            'numChatters'       : numChatters,
+            'numChatters'       : numChattersTotal,
+            'numChattersFilt'   : numChattersFilterCount,
             'streamTitle'       : stream.video_title,
             'streamerName'      : stream.streamer.channel_name,
             'chatActivityRank'  : chatActivityRank
@@ -703,7 +755,7 @@ def _processChatMessagesForClient(messagesAPIResponse, videoID):#{{{
                 msg_id = messageDict['msgID'],
                 text = messageDict['text'], 
                 timestamp = datetime.datetime.strptime(
-                    messageDict['timestamp'], "%Y-%m-%dT%H:%M:%S.%fZ"), 
+                    messageDict['timestamp'], "%Y-%m-%dT%H:%M:%S.%f%z"), 
                 is_mod = messageDict['isMod'],
                 is_owner = messageDict['isOwner'],
                 is_sponsor = messageDict['isSponsor']
@@ -729,7 +781,12 @@ def _processBroadcastInfo(broadcastInfo):#{{{
     exist in database of broadcast, broadcaster, and update database tables
     if necessary.
     '''
-    #pprint.pprint(broadcastInfo)
+    # Broadcast may be an ended stream, throw error if so {{{
+    if 'actualEndTime' in broadcastInfo['liveStreamingDetails']:
+        raise ValueError('liveChatEnded')
+    # }}} 
+
+
     # Retrieve broadcaster info from database. Create if vacant. {{{
 
     '''
@@ -772,13 +829,14 @@ def _processBroadcastInfo(broadcastInfo):#{{{
     return stream, broadcaster
 
 #}}}
-def _rankChatters(videoID):#{{{
+def _rankChatters(videoID, perPage, page, orderBy, incMods, incMembers) :#{{{
     '''
     Run a query and search for the most active chatters in a stream.
     '''
     messageRanks = []
 
-    r = db.session.query(
+    # First setup of Query {{{
+    query = db.session.query(
             db.func.count(MessageLog.author_id),
             ChatterLog.author_name,
             ChatterLog.avatar
@@ -786,9 +844,37 @@ def _rankChatters(videoID):#{{{
         .join(ChatterLog, 
                 MessageLog.author_id == ChatterLog.author_channel_id)\
         .filter(MessageLog.stream_id == videoID)\
-        .group_by(ChatterLog.author_channel_id)\
-        .order_by(desc(db.func.count(MessageLog.author_id)))\
-        .limit(5).all() 
+        .group_by(ChatterLog.author_channel_id)
+    # }}}
+    # Filter in or out chat Moderators and Members {{{
+    if incMods == 'only':
+        query = query.filter(MessageLog.is_mod == True)
+    elif incMods == 'exclude':
+        query = query.filter(MessageLog.is_mod == False)
+
+    if incMembers == 'only':
+        query = query.filter(MessageLog.is_sponsor == True)
+    elif incMembers == 'exclude':
+        query = query.filter(MessageLog.is_sponsor == False)
+
+    #print(query)
+    
+    # }}} 
+    # Setting up the Sorting of the Query {{{
+    if orderBy == 'numMessages desc':
+        query = query.order_by(desc(db.func.count(MessageLog.author_id)))
+    elif orderBy == 'numMessages':
+        query = query.order_by(db.func.count(MessageLog.author_id))
+    elif orderBy == 'name desc':
+        query = query.order_by(desc(ChatterLog.author_name))
+    elif orderBy == 'name':
+        query = query.order_by(ChatterLog.author_name)
+    #print(query)
+
+    # }}}
+ 
+    query = query.limit(perPage).offset(page * perPage)
+    r = query.all()
 
     for result in r:
         rankedMessage = {

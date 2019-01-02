@@ -77,10 +77,20 @@ export function sendChatMessage( // {{{
 } // }}}
 export function fetchStreamStats( // {{{
   videoID, 
+  perPage, 
+  page, 
+  orderBy, 
+  filtSponsors,
+  filtMods, 
   jwt ){ 
   //console.log(videoID, jwt)
   return axios.post(`${API_URL}/getstreamstats`, {
-      videoID: videoID
+      videoID: videoID,
+      perPage: perPage,
+      page: page - 1,  // Show pages starting from 1, but send starting from 0
+      orderBy: orderBy,
+      filtSponsors: filtSponsors,
+      filtMods: filtMods
     },
     {
       headers: {
