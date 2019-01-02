@@ -1,7 +1,7 @@
 <template> <!--{{{-->
 <div>  
 <AppHeader/>
-  <section class="hero is-primary">
+  <section class="hero">
     <div class="hero-body">
       <div class="container has-text-centered">
         <h2 class="title">Search For YouTube Live Streams</h2>

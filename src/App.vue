@@ -1,6 +1,11 @@
 <template>
   <div id="app">
-    <router-view/>
+    <transition 
+      name='router-anim'
+      enter-active-class='animated slideInRight'
+      leave-active-class='animated slideOutRight'>
+      <router-view/>
+    </transition>
   </div>
 </template>
 
@@ -13,25 +18,10 @@ export default {
 </script>
 
 <style lang="scss">
-
-// {{{ main options
-$primary: hsl(0, 0%, 21%);
-$background: hsl(0, 0%, 29%);
-$title-color: hsl(0, 0%, 98%);
-$body-color: hsl(0,0%,98%);
-
-// }}}
-// {{{ navbar options
-$navbar-background-color: hsl(0,0%,29%);
-$navbar-item-hover-background-color: hsl(0,0%,45%);
-$navbar-item-color: hsl(0,0%,100%);
-$navbar-item-hover-color: hsl(0,0%,100%);
-// }}}
-
+@import "~bulmaswatch/superhero/_variables.scss";
 @import '~bulma/bulma';
-
-html, body {
-  height: 100%;
-  background-color: hsl(0, 0%, 21%);
-}
+@import "~bulmaswatch/superhero/_overrides.scss";
+</style>
+<style>
+@import "https://cdn.jsdelivr.net/npm/animate.css@3.5.1";
 </style>

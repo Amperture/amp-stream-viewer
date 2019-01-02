@@ -31,15 +31,15 @@
 export default {
   data(){ // {{{
     return {
-      selectedOrder: 'relevance',
-      orders: [
+      selectedOrder : 'relevance',
+      orders        : [
         { 'text' : 'Date', 'value' : 'date' },
         { 'text' : 'Rating', 'value' : 'rating' },
         { 'text' : 'Relevance', 'value' : 'relevance' },
         { 'text' : 'Alphabetically by Title', 'value' : 'title' },
         { 'text' : 'Number of Viewers', 'value' : 'viewCount' }
       ],
-      searchText: ''
+      searchText    : ''
     }
   }, // }}}
   methods: {//{{{

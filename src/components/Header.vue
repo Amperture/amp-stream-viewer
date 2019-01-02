@@ -1,5 +1,5 @@
 <template>  <!--{{{-->
-<nav class="navbar is-black" role="navigation" aria-label="main navigation">  
+<nav class="navbar" role="navigation" aria-label="main navigation">  
   <span 
     v-bind:class="{ burger: true, 'navbar-burger': true, 'is-active': burgerActive }"
     v-on:click='burgerHandleClick'

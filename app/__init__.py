@@ -13,7 +13,11 @@ app.config.from_object(Config)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 lm = LoginManager(app) # Unnecessary?
-cors = CORS(app)
+cors = CORS(app,
+        resources = {
+            r"/api/*": {"origins": "*"}
+            }
+        )
 
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersekrit")
 
