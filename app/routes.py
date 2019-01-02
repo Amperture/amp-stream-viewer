@@ -202,11 +202,12 @@ def getStreamStats():
         The above 2 variables are optional and have two valid values.
         `only` and `exclude`, if not found, Sponsors/Mods will be included.
         '''
-        perPage         = form.get('perPage', 5)
-        page            = form.get('page', 0)
-        orderBy         = form.get('orderBy', 'numMessages desc')
-        filtSponsors    = form.get('filtSponsors', 'include')
-        filtMods        = form.get('filtMods', 'include')        
+        perPage             = form.get('perPage', 5)
+        chatterNameSearch   = form.get('chatterNameSearch', '')
+        page                = form.get('page', 0)
+        orderBy             = form.get('orderBy', 'numMessages desc')
+        filtSponsors        = form.get('filtSponsors', 'include')
+        filtMods            = form.get('filtMods', 'include')        
     except Exception as ex:
         print(ex)
         return jsonify({
@@ -266,6 +267,11 @@ def getStreamStats():
         elif filtMods == 'only':
             numChattersFilter = numChattersFilter.filter_by(is_mod = True)
 
+        if not chatterNameSearch == '':
+            numChattersFilter = numChattersFilter.join(MessageLog.author)\
+                    .filter(ChatterLog.author_name.startswith(
+                        chatterNameSearch))
+
         numChattersFilter = numChattersFilter.distinct(MessageLog.author_id)
         numChattersFilterCount = numChattersFilter.count()
 
@@ -276,10 +282,13 @@ def getStreamStats():
 
     try:
         chatActivityRank = _rankChatters(
-                videoID, perPage, page, orderBy, filtMods, filtSponsors)
+                videoID, perPage, page, orderBy, filtMods, filtSponsors,
+                chatterNameSearch
+                )
     except Exception as ex:
         print(ex)
     
+    #print(numChattersTotal, numChattersFilt)
     response = {
             'jwt'               : jwt,
             'numChatters'       : numChattersTotal,
@@ -828,7 +837,8 @@ def _processBroadcastInfo(broadcastInfo):#{{{
     return stream, broadcaster
 
 #}}}
-def _rankChatters(videoID, perPage, page, orderBy, incMods, incMembers) :#{{{
+def _rankChatters(videoID, perPage, page, #{{{
+        orderBy, incMods, incMembers, chatterNameSearch) :
     '''
     Run a query and search for the most active chatters in a stream.
     '''
@@ -856,6 +866,10 @@ def _rankChatters(videoID, perPage, page, orderBy, incMods, incMembers) :#{{{
         query = query.filter(MessageLog.is_sponsor == True)
     elif incMembers == 'exclude':
         query = query.filter(MessageLog.is_sponsor == False)
+
+    if not chatterNameSearch == '':
+        query = query.filter(ChatterLog.author_name.startswith(
+            chatterNameSearch))
 
     #print(query)
     

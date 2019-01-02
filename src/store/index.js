@@ -110,12 +110,22 @@ const actions = { // {{{
   }, // }}}
   grabStreamStats( // {{{
     context, 
-    {videoID, perPage, page, orderBy, filtSponsors, filtMods}
+    {
+      videoID, 
+      perPage, 
+      page, 
+      orderBy, 
+      filtSponsors, 
+      filtMods, 
+      chatterNameSearch
+    }
   ){ 
     let jwt = localStorage.getItem('jwt')
     return new Promise((resolve, reject) => {
       fetchStreamStats(
-        videoID, perPage, page, orderBy, filtSponsors, filtMods, jwt)
+        videoID, perPage, page, orderBy, filtSponsors, 
+        filtMods, chatterNameSearch, jwt
+      )
       .then((response) => {
         //console.log(response.data)
         context.commit('setJWTToken',   { token: response.data.jwt }) 

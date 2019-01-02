@@ -82,6 +82,7 @@ export function fetchStreamStats( // {{{
   orderBy, 
   filtSponsors,
   filtMods, 
+  chatterNameSearch,
   jwt ){ 
   //console.log(videoID, jwt)
   return axios.post(`${API_URL}/getstreamstats`, {
@@ -89,6 +90,7 @@ export function fetchStreamStats( // {{{
       perPage: perPage,
       page: page - 1,  // Show pages starting from 1, but send starting from 0
       orderBy: orderBy,
+      chatterNameSearch: chatterNameSearch,
       filtSponsors: filtSponsors,
       filtMods: filtMods
     },

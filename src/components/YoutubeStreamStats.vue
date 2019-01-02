@@ -10,6 +10,26 @@
   </section>
   <!-- Title Section }}}-->
   <p>TOTAL CHATTERS: {{ numChatters }}</p>
+  <!-- Search for Chatter by Name {{{ -->
+
+
+  <div class="field"> 
+    <label class="label">Search Chatter by Name</label>
+    <div class="control">
+      <form 
+        @submit.prevent='changePages(1)' 
+        v-on:change='changePages(1)'>
+        <input 
+          class='input is-small' 
+          type='text' 
+          placeholder='Search by Chatter Name'
+          v-on:input='changePages(1)'
+          v-model='chatterNameSearch'>
+      </form>
+    </div> 
+  </div>
+
+  <!-- Search for Chatter by Name }}} -->
   <!-- Filtering Section {{{ -->
   <div v-if='filterShow == true'>
     <!-- Sponsor/Mod Filter {{{ -->
@@ -57,16 +77,37 @@
     </div>
 
     <!-- Order By Setting }}} -->
-    
+    <!-- Page Setting {{{ -->
+
+
+    <div class="field"> 
+      <label class="label">Results Per Page</label>
+      <div class="control">
+        <div class="select">
+          <select v-model='perPage' v-on:change='changePages(1)'>
+            <option
+              v-for='option in perPageOptions'
+              v-on:change='changePages(1)'
+              v-bind:value='option'>{{ option }}</option>
+          </select>
+        </div>
+      </div> 
+    </div>
+
+    <!-- Page Setting }}} -->
     <button 
       class='button is-primary' 
-      v-on:click='filterShow = !filterShow'>Hide Advanced Filters</button>
+      v-on:click='filterShow = !filterShow'>
+      Hide Advanced Filters
+    </button>
 
   </div>
   <div v-if='filterShow == false'>
     <button 
       class='button is-primary' 
-      v-on:click='filterShow = !filterShow'>Show Advanced Filters</button>
+      v-on:click='filterShow = !filterShow'>
+      Show Advanced Filters
+    </button>
   </div>
 
   <!-- Filtering Section }}} -->
@@ -188,10 +229,17 @@ export default {
       chatActivityRank    : [],
       streamTitle         : '',
       streamerName        : '',
+      chatterNameSearch   : '',
+
+      filterShow          : false,
+      // Page Settings {{{
 
       perPage             : 10,
+      perPageOptions      : [5, 10, 20, 50, 100],
       page                : 1, // Showing as Page 1, will subtract 1 when 
                                // making API call.
+
+      // }}}
       // Ordering Options {{{
 
       orderBy             : 'numMessages desc',
@@ -227,7 +275,6 @@ export default {
         { 'text' : 'Show Only', 'value' : 'only' }
       ],
       // }}}
-      filterShow          : false
 
     }
 
@@ -244,12 +291,13 @@ export default {
     pollStreamStats(){// {{{
 
       this.$store.dispatch('grabStreamStats', {
-        videoID       : this.streamID,
-        perPage       : this.perPage,
-        page          : this.page,
-        orderBy       : this.orderBy,
-        filtSponsors  : this.filtSponsors,
-        filtMods      : this.filtMods
+        videoID           : this.streamID,
+        perPage           : this.perPage,
+        page              : this.page,
+        orderBy           : this.orderBy,
+        filtSponsors      : this.filtSponsors,
+        chatterNameSearch : this.chatterNameSearch,
+        filtMods          : this.filtMods
       })
         .then((response) => {
           this.numChatters = response.numChatters
@@ -263,8 +311,10 @@ export default {
 
     }, // }}}
     changePages(pageToMoveTo){// {{{
+
       this.page = pageToMoveTo
       this.pollStreamStats()
+
     }, // }}}
 
   }, // }}}
@@ -285,8 +335,8 @@ export default {
     }, this.statsPollTiming)
 
   } // }}}
-  }
+}
 
-</script> /* }}} */
+/* }}} */</script> 
 <style> /* {{{ */
 </style> /* }}} */
