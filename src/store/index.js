@@ -10,7 +10,7 @@ import {
   fetchUserInfo, 
   fetchErrorTest, 
   authorizeUser,
-  homePageSearchText,
+  fetchYoutubeStreamSearch,
   fetchChatMessages,
   fetchStreamStats,
   sendChatMessage,
@@ -77,11 +77,10 @@ const actions = { // {{{
 
   // }}}
   searchYoutube(context, {searchText, sortMethod}){ // {{{
-    let jwt = localStorage.getItem('jwt')
     //console.log("SEARCH TEXT: ", searchText)
     //console.log("SORT METHOD: ", sortMethod)
     return new Promise((resolve, reject) => {
-      homePageSearchText(searchText, sortMethod, jwt)
+      fetchYoutubeStreamSearch(searchText, sortMethod)
       .then((response) => {
         //console.log(response.data)
         context.commit('setJWTToken',   { token: response.data.jwt }) 

@@ -15,29 +15,29 @@ export function authorizeUser(authCode){ // {{{
   console.log(authCode)
   return axios.post(`${API_URL}/auth`, {authCode: authCode})
 } // }}}
-export function homePageSearchText(searchText, sortMethod, jwt){ //{{{
-  console.log(searchText, jwt)
+export function fetchYoutubeStreamSearch(searchText, sortMethod){ //{{{
+  let jwt = localStorage.getItem('jwt')
   if(sortMethod == undefined){
     sortMethod = 'relevance';
   }
-  return axios.post(`${API_URL}/searchyt`, 
+  return axios.get(`${API_URL}/youtube/search`, 
     {
-      searchText: searchText,
-      sortMethod: sortMethod
-    },
-    {
+      params: {
+        searchText: searchText,
+        sortMethod: sortMethod
+      },
       headers: {
         'Authorization' : jwt
       }
     })
 } //}}}
-export function fetchStreamInfo(videoID, jwt){ //{{{
-  //console.log("GRABBING VIDEO CHAT ID WITH PARAMETERS")
-  //console.log(videoID, jwt)
-  return axios.post(`${API_URL}/getstreaminfo`, {
-      videoID: videoID
-    },
+export function fetchStreamInfo(videoID){ //{{{
+  let jwt = localStorage.getItem('jwt')
+  return axios.get(`${API_URL}/youtube/stream`, 
     {
+      params: {
+        videoID: videoID
+      },
       headers: {
         'Authorization' : jwt
       }
