@@ -288,7 +288,7 @@ def getStreamStats():
     except Exception as ex:
         print(ex)
     
-    #print(numChattersTotal, numChattersFilt)
+    #print(numChattersTotal, numChattersFilterCount)
     response = {
             'jwt'               : jwt,
             'numChatters'       : numChattersTotal,
@@ -574,6 +574,76 @@ def errortest():
     return jsonify({
         'error' : 'test_error'
         }), 500
+
+#}}}
+@app.route('/api/chatlog', methods=["GET"]) #{{{
+def userChatLog():
+    # Process form {{{
+    try:
+        form        = request.args
+        print(form)
+        # Required parameters
+        videoID         = form['videoID']
+        logMethod       = form['logMethod']
+        jwt             = request.headers['Authorization']
+        # Optional parameters
+        pageNum         = int(form.get('pageNum', 0))
+        resultsPerPage  = int(form.get('resultsPerPage', 10))
+        authorID        = form.get('authorID', None)
+        msgID           = form.get('msgID', None)
+    except Exception as ex:
+        print(ex)
+        return jsonify({
+            'error': "invalid_request"
+            }), 500 
+    # }}}
+    # Test for valid LogMethod. Check that matching key is provided. {{{
+    validLogKeys = {
+            'msgID'     : { 
+                'key'       : msgID,
+                'method'    : _chatLogByMsgID
+            },
+            'authorID'  : { 
+                'key'       : authorID,
+                'method'    : _chatLogByAuthorID,
+            }
+    }  
+    if validLogKeys[logMethod]['key'] == None:
+        return jsonify({
+            'error': "invalid_request",
+            'detail': ("proper key was not provided "
+                "with requested logMethod.")
+            }), 500 
+
+    # }}}
+    #{{{ Verify Identity and Grab Credentials For API Call
+
+    try:
+        user, idInfo = _verifyJWTToken(jwt)
+        credentials = _dbToCreds(user.oauth_creds.id)
+        #print(credentials)
+        #print(user.email)
+    except:
+        return jsonify({
+            'error' : 'invalid_token'
+            }), 500
+
+    jwt = _refreshIdTokenIfNeeded(jwt, idInfo, credentials)
+
+    #}}}
+    # Execute Query {{{
+    chatLog, chatLogLen = validLogKeys[logMethod]['method'](
+            videoID, 
+            validLogKeys[logMethod]['key'], 
+            resultsPerPage, 
+            pageNum
+            )
+    # }}}
+    return jsonify({
+        'jwt'       : jwt,
+        'chatLog'   : chatLog,
+        'chatLogLen': chatLogLen, 
+        })
 
 #}}}
 
@@ -909,6 +979,7 @@ def _rankChatters(videoID, perPage, page, #{{{
                 'numMessages'   : result[0],
                 'name'          : result[1],
                 'avatar'        : result[2],
+                'authorID'      : result[3],
                 'isMod'         : False,
                 'isSponsor'     : False
         }
@@ -923,6 +994,86 @@ def _rankChatters(videoID, perPage, page, #{{{
     return messageRanks
     # }}}
 
+
+#}}}
+def _chatLogByMsgID(videoID, msgID, perPage, pageNum): #{{{
+    '''
+    Grab the context of a msgID by grabbing the preceeding and proceeding 
+    5 messages from the database.
+    '''
+    chatLog = []
+
+    # Grab the message in question {{{
+    msgFromID = MessageLog.query.filter_by(msg_id = msgID).first()
+    # }}}
+    # Grab the previous messages {{{
+    prevMsgQuery = MessageLog.query.filter_by(stream_id = videoID)\
+            .filter(MessageLog.timestamp < msgFromID.timestamp)\
+            .order_by(desc(MessageLog.timestamp))
+
+    prevMsgResult = prevMsgQuery.limit(5).all()
+    for r in reversed(prevMsgResult): # query will come in reversed order
+        chatLog.append({
+            'msgID'         : r.msg_id,
+            'text'          : r.text,
+            'author_name'   : r.author.author_name,
+            'avatar'        : r.author.avatar,
+            'isMod'         : r.is_mod,
+            'isSponsor'     : r.is_sponsor,
+            'timestamp'     : r.timestamp,
+            })
+    # }}}
+    # Grab the next messages {{{
+
+    nextMsgQuery = MessageLog.query.filter_by(stream_id = videoID)\
+            .filter(MessageLog.timestamp >= msgFromID.timestamp)\
+            .order_by(MessageLog.timestamp)
+
+    nextMsgResult = nextMsgQuery.limit(4).all()
+    for r in nextMsgResult:
+        chatLog.append({
+            'msgID'         : r.msg_id,
+            'text'          : r.text,
+            'author_name'   : r.author.author_name,
+            'avatar'        : r.author.avatar,
+            'isMod'         : r.is_mod,
+            'isSponsor'     : r.is_sponsor,
+            'timestamp'     : r.timestamp,
+            })
+
+    # }}}
+    
+    return chatLog, len(chatLog)
+
+#}}}
+def _chatLogByAuthorID(videoID, authorID, perPage, pageNum): #{{{
+    '''
+    Grab the chatlog of a given stream for a specific user.
+    '''
+    # Query Database Entry for User's Chatlog {{{
+    #print(videoID, authorID)
+    query = MessageLog.query.filter_by(author_id = authorID)\
+            .filter_by(stream_id = videoID)
+
+    r = query.limit(perPage).offset(pageNum * perPage).all()
+
+    chatLogLength = query.count()
+
+    chatLog = []
+    for result in r:
+        userChatMessage = {
+                'msgID'         : result.msg_id,
+                'text'          : result.text,
+                'author_name'   : result.author.author_name,
+                'avatar'        : result.author.avatar,
+                'isMod'         : result.is_mod,
+                'isSponsor'     : result.is_sponsor,
+                'timestamp'     : result.timestamp,
+                }
+        chatLog.append(userChatMessage)
+
+    # }}}
+    return chatLog, chatLogLength
 
 #}}}
 

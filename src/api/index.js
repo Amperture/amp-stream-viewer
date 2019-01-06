@@ -111,3 +111,39 @@ export function fetchErrorTest(){ // {{{
     }
   )
 } // }}}
+export function fetchUserChatLog(videoID, authorID, pageNum, perPage){ // {{{
+  let jwt = localStorage.getItem('jwt')
+  return axios.get(
+    `${API_URL}/chatlog`,
+    {
+      params   : {
+        videoID         : videoID,
+        authorID        : authorID, 
+        resultsPerPage  : perPage,
+        pageNum         : pageNum - 1 ,
+        logMethod       : 'authorID'
+      },
+      headers  : {
+        Authorization : jwt
+      }
+    }
+  )
+} // }}}
+export function fetchContextChatLog(videoID, msgID, pageNum, perPage){ // {{{
+  let jwt = localStorage.getItem('jwt')
+  return axios.get(
+    `${API_URL}/chatlog`,
+    {
+      params   : {
+        videoID         : videoID,
+        resultsPerPage  : perPage,
+        pageNum         : pageNum - 1,
+        msgID           : msgID, 
+        logMethod       : 'msgID'
+      },
+      headers  : {
+        Authorization : jwt
+      }
+    }
+  )
+} // }}}

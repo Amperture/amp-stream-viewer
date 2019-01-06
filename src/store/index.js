@@ -14,6 +14,8 @@ import {
   fetchChatMessages,
   fetchStreamStats,
   sendChatMessage,
+  fetchUserChatLog,
+  fetchContextChatLog,
   fetchStreamInfo } from '@/api'
 // }}}
 
@@ -195,6 +197,34 @@ const actions = { // {{{
       });
 
     });
+  }, // }}}
+  grabUserChatLog(context, {videoID, authorID, pageNum, perPage}){ // {{{ 
+    return new Promise((resolve, reject) => {
+      fetchUserChatLog(videoID, authorID, pageNum, perPage)
+      .then((response) => {
+        //console.log(response.data)
+        context.commit('setJWTToken',   { token: response.data.jwt }) 
+        resolve(response.data)
+      })
+      .catch((error) => {
+        console.log("STREAM STATS ERROR: ", error)
+        reject(error)
+      })
+    })
+  }, // }}}
+  grabContextChatLog(context, {videoID, msgID, pageNum, perPage}){ // {{{ 
+    return new Promise((resolve, reject) => {
+      fetchContextChatLog(videoID, msgID, pageNum, perPage)
+      .then((response) => {
+        //console.log(response.data)
+        context.commit('setJWTToken',   { token: response.data.jwt }) 
+        resolve(response.data)
+      })
+      .catch((error) => {
+        console.log("STREAM STATS ERROR: ", error)
+        reject(error)
+      })
+    })
   }, // }}}
 
 } // }}}
