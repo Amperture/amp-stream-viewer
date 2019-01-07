@@ -18,6 +18,17 @@ import time
 import datetime
 # }}}
 
+@app.route('/api/errortest', methods=["GET"]) #{{{
+def errortest():
+    '''
+    Google OAuth Redirect
+    '''
+    return jsonify({
+        'error' : 'test_error'
+        }), 500
+
+#}}}
+
 def refresh_jwt(jwt, idInfo, credsDBEntry):#{{{
 
     '''

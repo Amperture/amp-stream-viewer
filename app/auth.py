@@ -161,16 +161,6 @@ def googleAuth():
     return redirect(authorization_url, code=302)
 
 #}}}
-@app.route('/api/errortest', methods=["GET"]) #{{{
-def errortest():
-    '''
-    Google OAuth Redirect
-    '''
-    return jsonify({
-        'error' : 'test_error'
-        }), 500
-
-#}}}
 
 def _createNewUser(subToken, profile, credentials):#{{{
     '''
