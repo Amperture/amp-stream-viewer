@@ -1,11 +1,6 @@
 <template>
   <div id="app">
-    <transition 
-      name='router-anim'
-      enter-active-class='animated slideInRight'
-      leave-active-class='animated slideOutRight'>
-      <router-view/>
-    </transition>
+    <router-view/>
   </div>
 </template>
 

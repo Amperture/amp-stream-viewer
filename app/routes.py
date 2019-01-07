@@ -6,9 +6,8 @@ from app.util import auth_required, _credsToDict
 from app.models import User, OAuthCreds, StreamLog, ChatterLog, MessageLog, \
         Broadcaster, chatters_in_stream
 
-from sqlalchemy.orm.exc import NoResultFound, FlushError
+from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.dialects.postgresql import insert 
 from sqlalchemy import desc 
 
 import google_auth_oauthlib.flow
@@ -61,7 +60,6 @@ def authUser():
             }), 500
 
     #}}}
-
     #{{{ Use new OAuth Credentials to retrieve profile information
     try:
         # Grabbing the JWT 'sub' token.
@@ -82,7 +80,6 @@ def authUser():
             'error' : 'Error retrieving profile information.'
             }, 500)
     #}}}
-
     #{{{ Update Profile Information, or Create New Profile
     email = idInfo['email']
     avatar = profile['image']['url']
@@ -108,7 +105,6 @@ def authUser():
         print('User with profile info not found, creating new user.')
         _createNewUser(subToken, profile, credentials)
     #}}}
-
     #{{{ Construct Data to Send back to the browser
     browserProfileData = {
             'user'  : {
@@ -129,7 +125,6 @@ def auth_get(user):
     '''
     Grab User Info from DB, requires JWT token as POST parameter.
     '''
-    print("Trying to log user in")
     pprint.pprint(user)
     try:
         sendback = {

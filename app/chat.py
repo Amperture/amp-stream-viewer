@@ -8,11 +8,22 @@ from flask import jsonify, request
 from sqlalchemy import desc
 from sqlalchemy.orm.exc import NoResultFound, FlushError
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.dialects.postgresql import insert 
 
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
 import datetime
+import json
 import pytz
+# }}}
+
+COMMON_ERRORS = { # {{{
+        'backendError'      : "yt_backend_error",
+        'liveChatEnded'     : 'chat_ended',
+        'liveChatNotFound'  : 'chat_not_found',
+        'liveChatDisabled'  : 'chat_disabled',
+        }
 # }}}
 
 @app.route('/api/chat/youtube', methods=["POST"]) #{{{
@@ -228,7 +239,8 @@ def chat_youtube_stats_get(user):
 
 #}}} 
 @app.route('/api/chat/youtube/log', methods=["GET"]) #{{{
-def chat_youtube_log_get():
+@auth_required
+def chat_youtube_log_get(user):
     # Process form {{{
     try:
         form        = request.args
@@ -405,8 +417,24 @@ def _processChatMessagesForClient(messagesAPIResponse, videoID):#{{{
                 author_name = messageDict['authorName'],
                 avatar = messageDict['avatar']
                 )
+
+        author_upsert = insert(ChatterLog).values(
+                author_channel_id = messageDict['authorChannelID'],
+                author_name = messageDict['authorName'],
+                avatar = messageDict['avatar']
+                ).on_conflict_do_update(
+                    set_=dict(
+                        author_channel_id = messageDict['authorChannelID'],
+                        author_name = messageDict['authorName'],
+                        avatar = messageDict['avatar']
+                    ),
+                    index_elements=['author_channel_id']
+                    )
+
+
         try:
-            db.session.add(author)
+            #db.session.add(author)
+            db.session.execute(author_upsert)
             db.session.commit()
         except IntegrityError:
             #print("Author already known, skipping.")
