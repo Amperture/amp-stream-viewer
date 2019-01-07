@@ -34,22 +34,19 @@ const state = {  //{{{
 const actions = { // {{{ 
 
   loadUserInfo(context) { // {{{
-    let jwt = localStorage.getItem('jwt')
     return new Promise((resolve, reject) => {
-      //console.log("Fetching info...")
-      fetchUserInfo(jwt).then(response => {
-        //console.log("information found")
-
-        if(response.data.loggedIn == true){
-          context.commit('setUserName',   { name: response.data.name })
-          context.commit('setUserEmail',  { email: response.data.email })
-          context.commit('setUserAvatar', { avatar: response.data.avatar })
-          context.commit('setUserLoggedInState', { loginState: true })
-          resolve(response);
-        }
-
-        }, error => {
-          console.log("USER INFO FETCH ERROR: ", error)
+      fetchUserInfo()
+        .then((response) => {
+          if(response.data.loggedIn == true){
+            context.commit('setUserName',   { name: response.data.name })
+            context.commit('setUserEmail',  { email: response.data.email })
+            context.commit('setUserAvatar', { avatar: response.data.avatar })
+            context.commit('setUserLoggedInState', { loginState: true })
+            resolve(response);
+          }
+        })
+        .catch((error) => {
+          console.log("USER INFO FETCH ERROR: ", error.response)
           reject(error);
         })
     })
@@ -121,11 +118,10 @@ const actions = { // {{{
       chatterNameSearch
     }
   ){ 
-    let jwt = localStorage.getItem('jwt')
     return new Promise((resolve, reject) => {
       fetchStreamStats(
         videoID, perPage, page, orderBy, filtSponsors, 
-        filtMods, chatterNameSearch, jwt
+        filtMods, chatterNameSearch
       )
       .then((response) => {
         //console.log(response.data)
@@ -139,14 +135,13 @@ const actions = { // {{{
     })
   }, // }}}
   grabLiveChatMessages(context, {chatID, videoID, chatNextPageToken}){ // {{{
-    let jwt = localStorage.getItem('jwt')
     //console.log("Action for Polling Chat Messages")
     //console.log("JWT: ", jwt)
     //console.log("ChatID: ", chatID)
     //console.log("ChatNextPageToken: ", chatNextPageToken)
 
     return new Promise((resolve, reject) => {
-      fetchChatMessages(chatID, videoID, chatNextPageToken, jwt)
+      fetchChatMessages(chatID, videoID, chatNextPageToken)
       .then((response) => {
         //console.log(response.data)
         context.commit('setJWTToken',   { token: response.data.jwt }) 
@@ -160,14 +155,13 @@ const actions = { // {{{
     });
   }, // }}}
   sendLiveChatMessage(context, {chatID, messageText}){ // {{{
-    let jwt = localStorage.getItem('jwt')
     //console.log("Action for Polling Chat Messages")
     //console.log("JWT: ", jwt)
     //console.log("ChatID: ", chatID)
     //console.log("ChatNextPageToken: ", chatNextPageToken)
 
     return new Promise((resolve, reject) => {
-      sendChatMessage(chatID, messageText, jwt)
+      sendChatMessage(chatID, messageText)
       .then((response) => {
         console.log(response.data)
         context.commit('setJWTToken',   { token: response.data.jwt }) 

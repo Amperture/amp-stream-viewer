@@ -1,5 +1,5 @@
 # Imports {{{
-from app import app, lm, db
+from app import app, db
 from flask import request, jsonify
 
 from app.models import User, OAuthCreds, StreamLog, ChatterLog, MessageLog, \
@@ -13,6 +13,8 @@ import google.oauth2.credentials
 from google.oauth2 import id_token
 from google.auth.transport import requests
 
+import time
+
 import datetime
 # }}}
 
@@ -22,6 +24,7 @@ def refresh_jwt(jwt, idInfo, credsDBEntry):#{{{
     Compare the expiration timestamp of the jwt token,
     if the token expires in less than fifteen minutes, renew it.
     '''
+    credentials = _dbToCreds(credsDBEntry)
     now = datetime.datetime.now()
     exp = datetime.datetime.fromtimestamp(idInfo['exp'])
     delta = exp - now
@@ -32,6 +35,21 @@ def refresh_jwt(jwt, idInfo, credsDBEntry):#{{{
     return jwt
 
 #}}}
+def function_timer(func): # {{{
+
+    @wraps(func)
+    def timed_function(*args, **kwargs):
+        now = time.time()
+        result = func(*args, **kwargs)
+        later = time.time()
+        execute_time = later - now
+
+        print("That operation took {}.".format(execute_time))
+        return result
+
+    return timed_function
+
+# }}}
 def auth_required(func):#{{{
 
     '''
@@ -86,7 +104,7 @@ def auth_required(func):#{{{
 
         #}}}
         # Refresh JWT Token if Needed {{{
-        credentials = _dbToCreds1(user.oauth_creds)
+        credentials = _dbToCreds(user.oauth_creds)
         
         jwt = refresh_jwt(jwt, idInfo, user.oauth_creds)
         # }}}
@@ -102,7 +120,7 @@ def auth_required(func):#{{{
     return _auth
 
 #}}}
-def _credsToDict1(credentials): #{{{
+def _credsToDict(credentials): #{{{
     '''
     Making a Credentials object into a dictionary
     '''
@@ -115,7 +133,7 @@ def _credsToDict1(credentials): #{{{
         'scopes' : str(credentials.scopes),
     }
 #}}}
-def _dbToCreds1(credsEntry): #{{{
+def _dbToCreds(credsEntry): #{{{
 
     '''
     Taking a database entry of OAuthCreds, 

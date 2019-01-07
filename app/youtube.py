@@ -1,5 +1,5 @@
 # Python and Flask Imports {{{
-from app import app, lm, db
+from app import app, db
 from flask import redirect, jsonify, request
 
 from app.util import auth_required

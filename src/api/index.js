@@ -3,13 +3,15 @@ import axios from 'axios'
 
 const API_URL = process.env.API_URL
 
-export function fetchUserInfo(jwt){ // {{{
-  console.log("LOGIN TOKEN: ", jwt)
-  return axios.post(`${API_URL}/userinfo`, '', {
+export function fetchUserInfo(){ // {{{
+  let jwt = localStorage.getItem('jwt')
+  return axios.get(`${API_URL}/auth`, 
+    {
       headers: {
-        'Authorization' : jwt
+        Authorization : jwt
       }
-  })
+    }
+  )
 } // }}}
 export function authorizeUser(authCode){ // {{{
   console.log(authCode)
@@ -46,26 +48,30 @@ export function fetchStreamInfo(videoID){ //{{{
 export function fetchChatMessages( // {{{
   chatID, 
   videoID, 
-  chatNextPageToken, 
-  jwt ){ 
-  //console.log(chatID, chatNextPageToken, jwt)
-  return axios.post(`${API_URL}/getchatmsgs`, {
-      chatID            : chatID,
-      videoID           : videoID,
-      chatNextPageToken : chatNextPageToken
-    },
+  chatNextPageToken){ 
+
+  let jwt = localStorage.getItem('jwt')
+  return axios.get(`${API_URL}/chat/youtube`, 
     {
+      params  : {
+        chatID            : chatID,
+        videoID           : videoID,
+        chatNextPageToken : chatNextPageToken, 
+
+      },
       headers: {
         'Authorization' : jwt
       }
-    })
-} // }}}
+    }
+  )
+}
+
+// }}}
 export function sendChatMessage( // {{{
   chatID, 
-  messageText, 
-  jwt ){ 
-  //console.log(chatID, chatNextPageToken, jwt)
-  return axios.post(`${API_URL}/sendchatmsg`, {
+  messageText){
+  let jwt = localStorage.getItem('jwt')
+  return axios.post(`${API_URL}/chat/youtube`, {
       chatID: chatID,
       messageText: messageText
     },
@@ -82,24 +88,28 @@ export function fetchStreamStats( // {{{
   orderBy, 
   filtSponsors,
   filtMods, 
-  chatterNameSearch,
-  jwt ){ 
-  //console.log(videoID, jwt)
-  return axios.post(`${API_URL}/getstreamstats`, {
-      videoID: videoID,
-      perPage: perPage,
-      page: page - 1,  // Show pages starting from 1, but send starting from 0
-      orderBy: orderBy,
-      chatterNameSearch: chatterNameSearch,
-      filtSponsors: filtSponsors,
-      filtMods: filtMods
-    },
+  chatterNameSearch){ 
+
+  let jwt = localStorage.getItem('jwt')
+  return axios.get(`${API_URL}/chat/youtube/stats`, 
     {
+      params: {
+        videoID: videoID,
+        perPage: perPage,
+        page: page - 1,  // Show pages from 1, but send from 0
+        orderBy: orderBy,
+        chatterNameSearch: chatterNameSearch,
+        filtSponsors: filtSponsors,
+        filtMods: filtMods
+      },
       headers: {
         'Authorization' : jwt
       }
-    })
-} // }}}
+    }
+  )
+}
+
+// }}}
 export function fetchErrorTest(){ // {{{
   let jwt = localStorage.getItem('jwt')
   return axios.get(
@@ -114,7 +124,7 @@ export function fetchErrorTest(){ // {{{
 export function fetchUserChatLog(videoID, authorID, pageNum, perPage){ // {{{
   let jwt = localStorage.getItem('jwt')
   return axios.get(
-    `${API_URL}/chatlog`,
+    `${API_URL}/chat/youtube/log`,
     {
       params   : {
         videoID         : videoID,
@@ -132,7 +142,7 @@ export function fetchUserChatLog(videoID, authorID, pageNum, perPage){ // {{{
 export function fetchContextChatLog(videoID, msgID, pageNum, perPage){ // {{{
   let jwt = localStorage.getItem('jwt')
   return axios.get(
-    `${API_URL}/chatlog`,
+    `${API_URL}/chat/youtube/log`,
     {
       params   : {
         videoID         : videoID,
