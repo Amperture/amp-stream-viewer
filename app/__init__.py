@@ -19,4 +19,4 @@ cors = CORS(app,
 
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersekrit")
 
-from app import routes, models, util, youtube, chat
+from app import auth, models, util, youtube, chat

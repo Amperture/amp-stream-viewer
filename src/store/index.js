@@ -29,7 +29,7 @@ const state = {  //{{{
   userName: '',
   userEmail: '',
   userAvatar: '',
-  userLoggedIn: false,
+  jwt: localStorage.getItem('jwt')
 } //}}}
 const actions = { // {{{ 
 
@@ -240,7 +240,7 @@ const mutations = {  // {{{
   }, // }}}
   setJWTToken(state, payload){ // {{{
     //console.log('Setting Token: ', payload) 
-    localStorage.setItem('jwt', payload['token'])
+    localStorage.setItem('jwt', payload.token)
   }, // }}}
   setStreamList(state, payload){ // {{{
     //console.log('Setting Stream List: ', payload.search.items);
@@ -260,6 +260,17 @@ const mutations = {  // {{{
 } // }}}
 const getters = {  // {{{
   // reusable data accessors
+  userLoggedIn(){
+    if (!state.jwt || state.jwt.split('.').length < 3){
+      console.log('non valid or non existent token')
+      return false
+    } 
+    let expRaw = JSON.parse(atob(state.jwt.split('.')[1])).exp
+    let exp = new Date(expRaw * 1000)
+    let now = new Date()
+    return now < exp
+  }
+
 } // }}}
 const store = new Vuex.Store({ // {{{
   state,
