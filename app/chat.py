@@ -511,7 +511,8 @@ def _chatLogByMsgID(videoID, msgID, perPage, pageNum): #{{{
             'avatar'        : r.author.avatar,
             'isMod'         : r.is_mod,
             'isSponsor'     : r.is_sponsor,
-            'timestamp'     : r.timestamp,
+            'timestamp'     : r.timestamp\
+                    .strftime("%m/%d/%y, %H:%M:%S"),
             })
     # }}}
     # Grab the next messages {{{
@@ -529,7 +530,8 @@ def _chatLogByMsgID(videoID, msgID, perPage, pageNum): #{{{
             'avatar'        : r.author.avatar,
             'isMod'         : r.is_mod,
             'isSponsor'     : r.is_sponsor,
-            'timestamp'     : r.timestamp,
+            'timestamp'     : r.timestamp\
+                    .strftime("%m/%d/%y, %H:%M:%S"),
             })
 
     # }}}
@@ -559,7 +561,8 @@ def _chatLogByAuthorID(videoID, authorID, perPage, pageNum): #{{{
                 'avatar'        : result.author.avatar,
                 'isMod'         : result.is_mod,
                 'isSponsor'     : result.is_sponsor,
-                'timestamp'     : result.timestamp,
+                'timestamp'     : result.timestamp\
+                        .strftime("%m/%d/%y, %H:%M:%S"),
                 }
         chatLog.append(userChatMessage)
 

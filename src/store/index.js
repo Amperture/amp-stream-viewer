@@ -82,8 +82,8 @@ const actions = { // {{{
         //console.log(response.data)
         context.commit('setJWTToken',   { token: response.data.jwt }) 
         context.commit('setStreamList', { 
-          searchResult  :   response.data.searchResult,
-          searchTerm    :   searchText
+          searchResult  : response.data.searchResult,
+          searchTerm    : searchText
         }) 
       })
       .catch((error) => {
@@ -93,82 +93,74 @@ const actions = { // {{{
     })
   }, // }}}
   grabStreamInfo(context, videoID){ // {{{
+
     let jwt = localStorage.getItem('jwt')
     return new Promise((resolve, reject) => {
       fetchStreamInfo(videoID, jwt)
+
       .then((response) => {
         context.commit('setJWTToken',   { token: response.data.jwt }) 
         resolve(response.data)
       })
+
       .catch((error) => {
-        console.log("CHAT ID ERROR: ", error)
+        console.log("CHAT ID ERROR: ", error.response)
         reject(error)
       })
     })
+
   }, // }}}
   grabStreamStats( // {{{
-    context, 
-    {
-      videoID, 
-      perPage, 
-      page, 
-      orderBy, 
-      filtSponsors, 
-      filtMods, 
-      chatterNameSearch
-    }
-  ){ 
+    context, { videoID, perPage, page, orderBy, filtSponsors, filtMods, 
+      chatterNameSearch }){
+
     return new Promise((resolve, reject) => {
       fetchStreamStats(
         videoID, perPage, page, orderBy, filtSponsors, 
         filtMods, chatterNameSearch
       )
+
       .then((response) => {
-        //console.log(response.data)
         context.commit('setJWTToken',   { token: response.data.jwt }) 
         resolve(response.data)
       })
+
       .catch((error) => {
-        console.log("STREAM STATS ERROR: ", error)
+        console.log("STREAM STATS ERROR: ", error.response)
         reject(error)
       })
     })
   }, // }}}
   grabLiveChatMessages(context, {chatID, videoID, chatNextPageToken}){ // {{{
-    //console.log("Action for Polling Chat Messages")
-    //console.log("JWT: ", jwt)
-    //console.log("ChatID: ", chatID)
-    //console.log("ChatNextPageToken: ", chatNextPageToken)
 
     return new Promise((resolve, reject) => {
       fetchChatMessages(chatID, videoID, chatNextPageToken)
+
       .then((response) => {
         //console.log(response.data)
         context.commit('setJWTToken',   { token: response.data.jwt }) 
         resolve(response.data)
       })
-      .catch((error) => {
-        console.log("MESSAGES ERROR: ", error)
-        reject(error)
-      });
 
-    });
+      .catch((error) => {
+        console.log("MESSAGES ERROR: ", error.response)
+        reject(error)
+      })
+
+    })
   }, // }}}
   sendLiveChatMessage(context, {chatID, messageText}){ // {{{
-    //console.log("Action for Polling Chat Messages")
-    //console.log("JWT: ", jwt)
-    //console.log("ChatID: ", chatID)
-    //console.log("ChatNextPageToken: ", chatNextPageToken)
 
     return new Promise((resolve, reject) => {
       sendChatMessage(chatID, messageText)
+
       .then((response) => {
-        console.log(response.data)
         context.commit('setJWTToken',   { token: response.data.jwt }) 
         resolve(response.data)
       })
+
       .catch((error) => {
-        console.log("MESSAGES ERROR: ", error)
+        console.log("MESSAGES ERROR: ", error.response)
         reject(error)
       });
 
@@ -177,30 +169,30 @@ const actions = { // {{{
   pollError(context){ // {{{
     return new Promise((resolve, reject) => {
       fetchErrorTest()
+
       .then((response) => {
-        console.log(response.data)
         resolve(response.data)
       })
-      .catch((error) => {
-        console.log("MESSAGES ERROR")
-        console.log("=====")
-        console.log(error.response)
-        console.log("=====")
-        reject(error)
-      });
 
-    });
+      .catch((error) => {
+        console.log("MESSAGES ERROR: ", error.response)
+        reject(error)
+      })
+
+    })
   }, // }}}
   grabUserChatLog(context, {videoID, authorID, pageNum, perPage}){ // {{{ 
     return new Promise((resolve, reject) => {
       fetchUserChatLog(videoID, authorID, pageNum, perPage)
+
       .then((response) => {
         //console.log(response.data)
         context.commit('setJWTToken',   { token: response.data.jwt }) 
         resolve(response.data)
       })
+
       .catch((error) => {
-        console.log("STREAM STATS ERROR: ", error)
+        console.log("STREAM STATS ERROR: ", error.response)
         reject(error)
       })
     })
@@ -208,13 +200,15 @@ const actions = { // {{{
   grabContextChatLog(context, {videoID, msgID, pageNum, perPage}){ // {{{ 
     return new Promise((resolve, reject) => {
       fetchContextChatLog(videoID, msgID, pageNum, perPage)
+
       .then((response) => {
         //console.log(response.data)
         context.commit('setJWTToken',   { token: response.data.jwt }) 
         resolve(response.data)
       })
+
       .catch((error) => {
-        console.log("STREAM STATS ERROR: ", error)
+        console.log("STREAM STATS ERROR: ", error.response)
         reject(error)
       })
     })
@@ -241,6 +235,7 @@ const mutations = {  // {{{
   setJWTToken(state, payload){ // {{{
     //console.log('Setting Token: ', payload) 
     localStorage.setItem('jwt', payload.token)
+    state.jwt = payload.token
   }, // }}}
   setStreamList(state, payload){ // {{{
     //console.log('Setting Stream List: ', payload.search.items);
@@ -253,16 +248,16 @@ const mutations = {  // {{{
         'channel_name' : streamList[i].snippet.channelTitle,
         'stream_description' : streamList[i].snippet.description,
         'stream_title' : streamList[i].snippet.title,
-        'thumbnail' : streamList[i].snippet.thumbnails.high.url
+        'thumbnail' : streamList[i].snippet.thumbnails.medium
       })
     }
   } // }}}
 } // }}}
 const getters = {  // {{{
   // reusable data accessors
-  userLoggedIn(){
+  userLoggedIn(state){
     if (!state.jwt || state.jwt.split('.').length < 3){
-      console.log('non valid or non existent token')
+      //console.log('non valid or non existent token')
       return false
     } 
     let expRaw = JSON.parse(atob(state.jwt.split('.')[1])).exp

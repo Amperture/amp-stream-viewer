@@ -1,54 +1,61 @@
 <template>  <!--{{{-->
 <div>
   <AppHeader/>
-  <div class='columns'>
-    <!-- Video Container and Info {{{ -->
-    <div class='column'>
-      <div class='video-container'>
-        <iframe 
-          width="100%" 
-          :height="this.videoPlayerHeight" 
-          :src="this.youtubeEmbedURL" 
-          frameborder="0" 
-          allow="autoplay; encrypted-media" 
-          allowfullscreen></iframe>
-      </div>
-      <div>
-        <h1 class='title is-5'>{{ streamTitle }}</h1>
-        <h1 class='subtitle is-6'>by {{ streamerName }}</h1>
-        <router-link
-          :to="{ name : 'YoutubeStreamStats', query : { watch : this.streamID } }">
-          View Stream/Chat Stats</router-link>
-      </div>
-    </div> <!-- }}} -->
-    <!-- Chat Table {{{ -->
-    <div v-if='chatEnabled == true' class='column is-3'>
-      <table class='table chat-box'>
-        <tbody class='chat-table-body' ref='chatBox'>
-          <tr v-for="message in chatTable">
-            <td>
-              <figure class='image is-24x24'>
-                <img class='is-rounded' v-bind:src="message.avatar"/>
-              </figure>
-            </td>
-            <td><strong>{{ message.authorName }}</strong>
-            {{ message.text }}</td>
-          </tr>
-        </tbody>
-      </table>
-      <form @submit.prevent='handleSendChat'><!--Send Chat Form {{{-->
-        <div class='field'> 
-          <div class="control">
-            <input class="input" v-model='messageTextToSend' type="text" placeholder="Chat!">
+  <section class='section'>
+      <div class='columns'>
+        <!-- Video Container and Info {{{ -->
+        <div class='column'>
+          <div class='video-container'>
+            <iframe 
+              width="100%" 
+              :height="this.videoPlayerHeight" 
+              :src="this.youtubeEmbedURL" 
+              frameborder="0" 
+              allow="autoplay; encrypted-media" 
+              allowfullscreen></iframe>
           </div>
-        </div>
-      </form><!--}}}-->
-    </div> <!--}}}-->
-    <!-- Chat Disabled {{{ -->
-    <div v-else class='column is-3'>
-      <p>{{ reasons[chatEnabledReason] }}</p>
-    </div> <!--}}}-->
-  </div>
+          <div>
+            <h1 class='title is-5'>{{ streamTitle }}</h1>
+            <h1 class='subtitle is-6'>by {{ streamerName }}</h1>
+            <router-link
+              :to="{ name : 'YoutubeStreamStats', query : { watch : this.streamID } }">
+              View Stream/Chat Stats</router-link>
+          </div>
+        </div> <!-- }}} -->
+        <!-- Chat Table {{{ -->
+        <div v-if='chatEnabled == true' class='column is-3'>
+          <table class='table chat-box'>
+            <tbody class='chat-table-body' ref='chatBox'>
+              <tr v-for="message in chatTable">
+                <td>
+                  <figure class='image is-24x24'>
+                    <img class='is-rounded' v-bind:src="message.avatar"/>
+                  </figure>
+                </td>
+                <td><strong>{{ message.authorName }}</strong>
+                {{ message.text }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <form @submit.prevent='handleSendChat'><!--Send Chat Form {{{-->
+            <div class='field'> 
+              <div v-bind:class="chatInputControlClass">
+                <input 
+                  v-bind:class="chatInputBoxClass" 
+                  v-model='messageTextToSend' 
+                  :disabled='chatInputBoxClass.disabled'
+                  type="text" 
+                  placeholder="Chat!">
+              </div>
+            </div>
+          </form><!--}}}-->
+        </div> <!--}}}-->
+        <!-- Chat Disabled {{{ -->
+        <div v-else class='column is-3'>
+          <p>{{ reasons[chatEnabledReason] }}</p>
+        </div> <!--}}}-->
+      </div>
+  </section>
 </div>
 </template> <!--}}}-->
 <script> /* {{{ */
@@ -63,26 +70,38 @@ export default {
   data() { // {{{ 
 
     return {
-      documentFullWidth   : document.documentElement.clientWidth,
-      streamID            : this.$route.query.watch,
-      streamTitle         : '',
-      streamDescription   : '',
-      streamerName        : '',
-      liveChatID          : '',
-      chatPolling         : null,
-      chatNextPageToken   : null,
-      chatNextInterval    : null,
-      chatTable           : [],
-      chatPollingActive   : true, // flag for chat polling
-      chatEnabled         : false,
-      chatEnabledReason   : 'loading',
-      reasons             : {
-         'loading'          : "Hang on a hot second, I'm loading the chat...",
-         'chat_disabled'    : "This streamer went and disabled chat, that's too bad!",
-         'chat_not_found'   : "I don't think this is a live video, I can't find chat!",
-         'chat_ended'       : "Alright, fun's over. Chat's ended. We're done here!",
+      documentFullWidth     : document.documentElement.clientWidth,
+      streamID              : this.$route.query.watch,
+      streamTitle           : '',
+      streamDescription     : '',
+      streamerName          : '',
+      liveChatID            : '',
+      messageTextToSend     : null,
+      messageSentSuccess    : null,
+      messageSentFail       : null,
+      chatPolling           : null,
+      chatNextPageToken     : null,
+      chatNextInterval      : null,
+      chatTable             : [],
+      chatPollingActive     : true, // flag for chat polling
+      chatEnabled           : false,
+      chatEnabledReason     : 'loading',
+      reasons               : {
+         'loading'        : "Hang on a hot second, I'm loading the chat...",
+         'chat_disabled'  : "This streamer went and disabled chat, that's too bad!",
+         'chat_not_found' : "I don't think this is a live video, I can't find chat!",
+         'chat_ended'     : "Alright, fun's over. Chat's ended. We're done here!",
       },
-      messageTextToSend   : null
+      chatInputBoxClass   : {
+        'input'       : true,
+        'disabled'    : false,
+        'is-danger'   : false,
+        'is-success'  : false,
+      },
+      chatInputControlClass : {
+        'control'     : true,
+        'is-loading'  : false
+      }, 
 
     }
 
@@ -183,13 +202,32 @@ export default {
 
     }, // }}}
     handleSendChat(){ // {{{
+      this.chatInputBoxClass.disabled = true
+      this.chatInputControlClass['is-loading'] = true
       this.$store.dispatch(
         'sendLiveChatMessage', {
           chatID      : this.liveChatID,
           messageText : this.messageTextToSend
         })
         .then((response) => {
+          this.chatInputBoxClass.disabled = false
+          this.chatInputControlClass['is-loading'] = false
           this.messageTextToSend = null
+          this.chatInputBoxClass['is-success'] = true
+          setTimeout(() => { 
+            console.log("no more sucess class!")
+            this.chatInputBoxClass['is-success'] = false;
+          }, 5000)
+        })
+        .catch((error) => {
+          this.chatInputControlClass['is-loading'] = false
+          this.chatInputBoxClass.disabled = false
+          this.messageTextToSend = null
+          this.chatInputBoxClass['is-danger'] = true
+          this.messageSentFail = setTimeout(() => { 
+            console.log("no more failures!")
+            this.chatInputBoxClass['is-danger'] = false;
+          }, 5000)
         })
     }, // }}}
     handleResize(){ // {{{
@@ -208,8 +246,6 @@ export default {
     // Handling Window Resizing
     window.addEventListener('resize', this.handleResize)
 
-    // Make sure chat is scrolled to bottom of box at spawn.
-    this.$refs.chatBox.scrollTop = this.$refs.chatBox.scrollHeight
   }, // }}}
   created(){ // {{{
     this.$store.dispatch('grabStreamInfo', this.streamID)
@@ -294,5 +330,11 @@ table {
 
 .subtitle{
   color: hsl(0, 0%, 71%);
+}
+.is-danger{
+  border-width: 3px;
+}
+.is-success{
+  border-width: 3px;
 }
 </style> /* }}} */

@@ -8,7 +8,9 @@
     <span></span>
     <span></span>
   </span>
-  <div v-bind:class="{'navbar-menu': true, 'is-active': navbarActive }" id='headerNavbarMenu'>
+  <div 
+    v-bind:class="{'navbar-menu': true, 'is-active': navbarActive }" 
+    id='headerNavbarMenu'>
     <div class="navbar-start">
       <router-link to="/" class="navbar-item">
         Home

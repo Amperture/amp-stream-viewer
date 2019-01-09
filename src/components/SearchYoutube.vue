@@ -7,14 +7,27 @@
   </div>
 </section>
 <section class='section'>
-  <div class='columns'>
-    <div class='column'
-         v-for='stream in ytStreams'>
-      <router-link
-        :to="{ name : 'WatchYoutube', query : { watch : stream.stream_id } }">
-        {{ stream.stream_title }} hosted by {{ stream.channel_name }}
-        <img v-bind:src=stream.thumbnail />
-      </router-link>
+  <div class='container'>
+    <div v-for='stream in ytStreams' class='stream_search_result'>
+      <div class='columns is-gapless'>
+        <div class='column'>
+          <router-link 
+            :to="{ name : 'WatchYoutube', query : { watch : stream.stream_id } }">
+            <img 
+              v-bind:src=stream.thumbnail.url
+              v-bind:height=stream.thumbnail.height
+              v-bind:width=stream.thumbnail.width />
+          </router-link>
+        </div>
+        <div class='column'>
+          <router-link 
+            :to="{ name : 'WatchYoutube', query : { watch : stream.stream_id } }">
+            <p><h1 
+             class='title'>{{ stream.stream_title }}</h1></p>
+          </router-link>
+          <p><h2 class='subtitle'>by {{ stream.channel_name }}</h2></p>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -48,3 +61,8 @@ export default {
   }
 }
 </script> /* }}} */
+<style>/* {{{ */
+.stream_search_result{
+}
+</style>/* }}} */
+

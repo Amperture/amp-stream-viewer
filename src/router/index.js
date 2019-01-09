@@ -15,32 +15,39 @@ export default new Router({
   mode: 'history',
   routes: [
     {
+      // Home Page Path {{{
       path: '/',
       name: 'Home',
       component: Home,
       beforeEnter(to, from, next){
+        // The Home Route will end up being the one intercepting the OAuth
+        // Code from Google. So a more complex check will need to be done.
 
         if(!store.getters.userLoggedIn && to.query.hasOwnProperty('code')){
-          //console.log('bearer token found, dispatching')
+          //console.log("code")
           store.dispatch('authUser', to.query.code)
+
             .then((response) =>{
-              //console.log('bearer token dispatched successfully')
-              console.log(store.getters.userLoggedIn)
-              next() 
+              let token = response.data.token
+              let expRaw = JSON.parse(atob(token.split('.')[1])).exp
+              let exp = new Date(expRaw * 1000)
+              let now = new Date()
+              now < exp ? next() : next('login');
             })
+
             .catch((error) => {
-              next('/login')
+              next('login')
             })
 
         } else if (!store.getters.userLoggedIn) {
-          //console.log('user not logged in, pushing to login')
           next('login')
         } else {
           next() 
         }
 
       }
-    },
+    }, // }}}
+    // Login Path {{{
     {
       path: '/login',
       name: 'Login',
@@ -52,7 +59,8 @@ export default new Router({
           next() 
         }
       }
-    },
+    }, // }}}
+    // Stream Watch Page Route {{{
     {
       path: '/ytwatch',
       name: 'WatchYoutube',
@@ -64,7 +72,8 @@ export default new Router({
           next() 
         }
       }
-    },
+    }, // }}}
+    // Stream Stats Page Route {{{
     {
       path: '/ytstats',
       name: 'YoutubeStreamStats',
@@ -77,11 +86,15 @@ export default new Router({
         }
       }
     },
+    // }}}
+    // Error Test Route {{{
     {
       path: '/errortest',
       name: 'ErrorTest',
       component: ErrorTest,
     },
+    // }}}
+    // Youtube Search Route {{{
     {
       path: '/ytsearch',
       name: 'SearchYoutube',
@@ -93,6 +106,7 @@ export default new Router({
           next() 
         }
       }
-    }
+    } 
+    // }}}
   ]
 })
