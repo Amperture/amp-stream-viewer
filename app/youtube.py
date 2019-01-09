@@ -9,6 +9,8 @@ from app.models import User, OAuthCreds, StreamLog, ChatterLog, MessageLog, \
 
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+
+import json
 # }}} 
 
 COMMON_ERRORS = { # {{{
@@ -29,15 +31,22 @@ def youtube_search_get(user):
 
     try:
         form        = request.args
-        searchText = form['searchText']
+        # Required Arguemnts
         sortMethod = form['sortMethod']
+        # Optional Arguments
+        searchText = form.get('searchText')
+        searchMethod = form.get('searchMethod', '')
     except:
         return jsonify({
             'error': "empty_request"
             }), 500 
 
     # }}}
-    #{{{ Create Youtube stream search API and execute
+    # Sometimes a user will just want to repeat their last search {{{
+    if (searchMethod == 'lastSearch'):
+        searchText = user['user'].last_search
+    # }}}
+    # {{{ Create Youtube stream search API and execute
 
     try:
         youtube = build('youtube', 'v3', credentials=user['credentials'])
@@ -45,10 +54,13 @@ def youtube_search_get(user):
                 part='id,snippet',
                 q=searchText,
                 type='video',
+                maxResults=10,
                 relevanceLanguage='en',
                 order=sortMethod,
                 eventType='live'
         ).execute()
+        user['user'].last_search = searchText
+        db.session.commit()
     except HttpError as ex:
         contentJSON = json.loads(ex.content)
         errorDetail = contentJSON['error']['errors'][0]['reason']
@@ -61,8 +73,6 @@ def youtube_search_get(user):
             return jsonify({
                 'error' : 'unknown_error'
                 }), 500
-    #pprint.pprint(searchResponse)
-
     #}}}
 
     response = {
