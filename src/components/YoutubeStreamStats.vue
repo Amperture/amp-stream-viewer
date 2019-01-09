@@ -135,7 +135,8 @@
           <!-- Filtering Section }}} -->
           <!-- Chatters Table {{{-->
           <div class='panel-block'>
-          <table class='table chat-rank-table'> 
+          <p v-if='chatActivityRank.length == 0'>{{ messageNothingToShow }}</p>
+          <table v-else-if='chatActivityRank.length != 0' class='table chat-rank-table'> 
             <thead>
               <tr>
                 <th class='has-text-centered'><abbr title='User Avatar'>
@@ -256,7 +257,8 @@
         <div v-if='whichStatsToShow == "userChatlog"'>
           <!-- Chatlog Table {{{ -->
           <div class='panel-block'>
-          <table class='table chat-rank-table'> 
+          <p v-if='chatLog.length == 0'>{{ messageNothingToShow }}</p>
+          <table v-else-if='chatLog.length != 0' class='table chat-rank-table'> 
             <thead>
               <tr>
                 <th><abbr title='User Avatar'>
@@ -379,7 +381,8 @@
         <div v-if='whichStatsToShow == "contextChatLog"'>
           <!-- Chatlog Table {{{ -->
           <div class='panel-block'>
-          <table class='table chat-rank-table'> 
+          <p v-if='contextChatLog.length == 0'>{{ messageNothingToShow }}</p>
+          <table v-else-if='contextChatLog.length != 0' class='table chat-rank-table'> 
             <thead>
               <tr>
                 <th><abbr title='User Avatar'>
@@ -497,6 +500,7 @@ export default {
       streamTitle         : '',
       streamerName        : '',
       chatterNameSearch   : '',
+      messageNothingToShow: "Whoops, looks like we have nothing to show here! Maybe a user or message wasn't selected, or your criteria returned nothing!",
 
       whichStatsToShow    : 'chatterRank',
 
