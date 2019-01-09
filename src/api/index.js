@@ -33,6 +33,20 @@ export function fetchYoutubeStreamSearch(searchText, sortMethod){ //{{{
       }
     })
 } //}}}
+export function fetchRepeatYoutubeStreamSearch(){ //{{{
+  let jwt = localStorage.getItem('jwt')
+  let sortMethod = 'relevance';
+  return axios.get(`${API_URL}/youtube/search`, 
+    {
+      params: {
+        searchMethod: 'lastSearch',
+        sortMethod: sortMethod
+      },
+      headers: {
+        'Authorization' : jwt
+      }
+    })
+} //}}}
 export function fetchStreamInfo(videoID){ //{{{
   let jwt = localStorage.getItem('jwt')
   return axios.get(`${API_URL}/youtube/stream`, 

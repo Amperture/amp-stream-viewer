@@ -42,8 +42,16 @@ def authUser():
     data = request.get_json()
     # {{{ Create OAuth Flow and Exchange Authorization Token for Refresh/Access
     try:
-        flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
-            app.config['CLIENT_SECRET_JSON_PATH'],
+        flow = google_auth_oauthlib.flow.Flow.from_client_config(
+            { 
+            'web' :{
+                'client_id'     : app.config['GOOGLE_OAUTH_CLIENT_ID'],
+                'client_secret' : app.config['GOOGLE_OAUTH_CLIENT_SECRET'],
+                'redirect_uri'  : app.config['GOOGLE_OAUTH_REDIRECT_URI'],
+                'auth_uri'      : app.config['GOOGLE_OAUTH_AUTH_URI'],
+                'token_uri'     : app.config['GOOGLE_OAUTH_TOKEN_URI']
+                }
+            },
             scopes=[
                 'https://www.googleapis.com/auth/userinfo.email', 
                 'https://www.googleapis.com/auth/userinfo.profile', 
@@ -98,7 +106,13 @@ def authUser():
         user.email = email
 
         OAuthCreds.query.filter_by(id = user.oauth_creds.id) \
-            .update(_credsToDict(credentials))
+            .update({
+                'token'         : credentials.token,
+                'token_uri'     : credentials.token_uri,
+                'client_id'     : credentials.client_id,
+                'client_secret' : credentials.client_secret,
+                'scopes'        : str(credentials.scopes)
+                })
 
         db.session.commit()
     except NoResultFound: 
@@ -144,13 +158,22 @@ def googleAuth():
     '''
     Google OAuth Redirect
     '''
-    flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
-        app.config['CLIENT_SECRET_JSON_PATH'],
+    flow = google_auth_oauthlib.flow.Flow.from_client_config(
+        { 
+            'web' :{
+                'client_id'     : app.config['GOOGLE_OAUTH_CLIENT_ID'],
+                'client_secret' : app.config['GOOGLE_OAUTH_CLIENT_SECRET'],
+                'redirect_uri'  : app.config['GOOGLE_OAUTH_REDIRECT_URI'],
+                'auth_uri'      : app.config['GOOGLE_OAUTH_AUTH_URI'],
+                'token_uri'     : app.config['GOOGLE_OAUTH_TOKEN_URI']
+                }
+            },
         scopes=[
             'https://www.googleapis.com/auth/userinfo.email', 
             'https://www.googleapis.com/auth/userinfo.profile', 
             'https://www.googleapis.com/auth/youtube.force-ssl',
             'https://www.googleapis.com/auth/youtube'])
+    print(flow)
     flow.redirect_uri = app.config['FRONTEND_URL']
     authorization_url, state = flow.authorization_url(
             access_type='offline',

@@ -405,6 +405,13 @@ def _processChatMessagesForClient(messagesAPIResponse, videoID):#{{{
                     'text'              : item['snippet']['displayMessage'],
                     'timestamp'         : item['snippet']['publishedAt']
                     }
+            # Some versions of Python don't like seeing 'Z' as the tzinfo {{{
+            if messageDict['timestamp'][-1:] == 'Z':
+                # Change the 'Z' to a '+0000', plays nicer with Python
+                # Datetime library
+                messageDict['timestamp'] = \
+                    messageDict['timestamp'][:-1] + "+0000"
+            # }}}
         except Exception as ex:
             pprint.pprint(item)
             print(ex)

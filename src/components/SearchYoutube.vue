@@ -53,16 +53,6 @@ export default {
   components: { // {{{
     'AppHeader': Header
   }, // }}}
-  created(){ // {{{
-    //this.$store.dispatch('searchYoutube', this.search, this.sort)
-  }, // }}}
-
-  beforeMount(){
-  }
 }
 </script> /* }}} */
-<style>/* {{{ */
-.stream_search_result{
-}
-</style>/* }}} */
 

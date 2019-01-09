@@ -11,6 +11,7 @@ import {
   fetchErrorTest, 
   authorizeUser,
   fetchYoutubeStreamSearch,
+  fetchRepeatYoutubeStreamSearch,
   fetchChatMessages,
   fetchStreamStats,
   sendChatMessage,
@@ -84,6 +85,23 @@ const actions = { // {{{
         context.commit('setStreamList', { 
           searchResult  : response.data.searchResult,
           searchTerm    : searchText
+        }) 
+      })
+      .catch((error) => {
+        console.log("SEARCH ERROR: ", error)
+        reject(error)
+      })
+    })
+  }, // }}}
+  repeatYoutubeSearch(context){ // {{{
+    return new Promise((resolve, reject) => {
+      fetchRepeatYoutubeStreamSearch()
+      .then((response) => {
+        //console.log(response.data)
+        context.commit('setJWTToken',   { token: response.data.jwt }) 
+        context.commit('setStreamList', { 
+          searchResult  : response.data.searchResult,
+          searchTerm    : '',
         }) 
       })
       .catch((error) => {

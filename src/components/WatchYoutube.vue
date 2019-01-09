@@ -24,7 +24,7 @@
         </div> <!-- }}} -->
         <!-- Chat Table {{{ -->
         <div v-if='chatEnabled == true' class='column is-3'>
-          <table class='table chat-box'>
+          <table class='table chat-table'>
             <tbody class='chat-table-body' ref='chatBox'>
               <tr v-for="message in chatTable">
                 <td>
@@ -309,9 +309,10 @@ export default {
 
 </script> /* }}} */
 <style> /* {{{ */
-table {
+.chat-table {
   width: 100%;
 }
+
 .chat-table-body {
   display: block; 
   min-height: 360px;
