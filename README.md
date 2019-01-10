@@ -3,6 +3,15 @@ A stream viewing and Chat Analytics webapp for Youtube.
 
 You can find a live demo of this app [here](https://vast-dusk-61702.herokuapp.com/)
 
+## Built Using
+* [Flask](http://flask.pocoo.org/) -- Python Microservices Framework.
+  * Familiarity -- 2 years experience
+* [Vue.JS](https://vuejs.org/) -- Javascript Framework
+  * Familiarity -- None
+* [Bulma](https://bulma.io/) -- CSS Framework
+  * Familiarity -- None
+
+
 ## Getting Started
 ### Prerequisites
 * `python` v3
@@ -57,4 +66,3 @@ $ npm run dev # Run Development Server
 
 # Navigate in your browser of choice to the url provided.
 ```
-
