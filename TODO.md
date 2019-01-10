@@ -25,14 +25,14 @@ Maybe think of it as a non-timestamped dev-diary.
   * Will need to parse through these and see which ones are most relevant to our app.
 
 ## Chat API
-- [] Better segregation of `liveChatMessages` types.
+- [ ] Better segregation of `liveChatMessages` types.
   * [LiveChatMessages endpoint](https://developers.google.com/youtube/v3/live/docs/liveChatMessages#snippet.type) `snippet.type` object
   * System currently simply displays all text as messages.
   * `superChatEvent` could be tracked for stats w.r.t. money raised.
     * [`superChatDetails`](https://developers.google.com/youtube/v3/live/docs/liveChatMessages#snippet.superChatDetails) for storing amount.
   * `tombstone` and `userBannedEvent`  would be good data to use for moderator logs.
     * Would need to create mod- and owner-only stats pages.
-- [] Rolling timeframes for chatlog.
+- [ ] Rolling timeframes for chatlog.
   * Example Query Filter:
     
 ```python
