@@ -30,9 +30,9 @@ Most of these are nice ideas that would be neat to implement.
     * System currently simply displays all text as messages.
     * `superChatEvent` could be tracked for stats w.r.t. money raised.
       * [`superChatDetails`](https://developers.google.com/youtube/v3/live/docs/liveChatMessages#snippet.superChatDetails) for storing amount.
-    * `tombstone  would be good data to use for moderator logs.
+    * `tombstone` and `userBannedEvent`  would be good data to use for moderator logs.
       * Would need to create mod- and owner-only stats pages.
     * Rolling timeframes for `log` stats.
-      * ``` python
+```python
 MessageLog.filter_by(timestamp > (datetime.utcnow() - datetime.timedelta(minutes = 5))
 ```
