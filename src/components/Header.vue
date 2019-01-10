@@ -43,13 +43,6 @@ export default {
       this.navbarActive = !this.navbarActive
     }
   }, // }}}
-  computed: { // {{{
-
-  }, // }}}
-  created() { // {{{
-  } // }}}
 }
 
 </script> /* }}} */
-<style> /* {{{ */
-</style> /* }}} */

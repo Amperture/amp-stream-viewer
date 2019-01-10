@@ -1,4 +1,4 @@
-<template>
+<template> <!-- {{{ -->
 <div>
   <section class="hero is-primary is-fullheight">
     <div class="hero-body">
@@ -13,26 +13,18 @@
     </div>
   </section>
 </div>
-</template>
+<!-- }}} --></template>
+
 
 <script>
 export default{
-  data() {
+  data() { // {{{
+
     return {
       google_auth: process.env.GOOGLE_AUTH_LINK
     }
-  },
-  beforeMount(){
-  },
-  components: {
-  }, 
-  computed: {
-  },
-  methods: {
-  }
+
+  }, // }}}
 }
 
 </script>
-
-<style>
-</style>

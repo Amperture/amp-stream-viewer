@@ -43,39 +43,27 @@ export default {
     }
   }, // }}}
   methods: {//{{{
+
     handleSearch(){ // {{{
-      //console.log(this.searchText, this.selectedOrder)
+
       this.$store.dispatch(
         'searchYoutube', {
           searchText: this.searchText,
           sortMethod: this.selectedOrder
         })
-        .then((response) => { // {{{
-
-        }) // }}}
         .catch((error) => { // {{{
+
           switch(error){
             case 'invalid_token':
               this.$router.push('login')
               break;
           }
+
         }) // }}}
 
       this.$router.push({
         name: 'SearchYoutube',
-        /*
-        query: {
-          search: this.searchText,
-          sort:  this.selectedOrder
-        },
-        */
       })
-      /*
-      this.$store.dispatch('searchYoutube', this.search_text)
-        .then(response => {
-        console.log("Search Executed!")
-        })
-      */
     }
 
   }, //}}}

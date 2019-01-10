@@ -12,15 +12,9 @@ import store from './store'
 // {{{ Fontawesome imports and config
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faGoogle } from '@fortawesome/free-brands-svg-icons'
-import { faSearch } from '@fortawesome/free-solid-svg-icons'
-import { faWrench } from '@fortawesome/free-solid-svg-icons'
-import { faUserCircle } from '@fortawesome/free-solid-svg-icons'
-import { faCommentAlt } from '@fortawesome/free-solid-svg-icons'
-import { faClock } from '@fortawesome/free-solid-svg-icons'
-import { faLink } from '@fortawesome/free-solid-svg-icons'
-import { faComments } from '@fortawesome/free-solid-svg-icons'
-import { faQuestion } from '@fortawesome/free-solid-svg-icons'
-import { faMoneyBillWave } from '@fortawesome/free-solid-svg-icons'
+import { faSearch, faWrench, faUserCircle, faCommentAlt, 
+  faClock, faLink, faComments, faQuestion, faMoneyBillWave 
+  } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
 library.add(faGoogle, faSearch, faUserCircle, faWrench, 

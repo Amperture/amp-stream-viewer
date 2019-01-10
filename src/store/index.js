@@ -112,7 +112,7 @@ const actions = { // {{{
   }, // }}}
   grabStreamInfo(context, videoID){ // {{{
 
-    let jwt = localStorage.getItem('jwt')
+    const jwt = localStorage.getItem('jwt')
     return new Promise((resolve, reject) => {
       fetchStreamInfo(videoID, jwt)
 
@@ -259,7 +259,7 @@ const mutations = {  // {{{
     //console.log('Setting Stream List: ', payload.search.items);
     state.ytStreams = [];
     state.ytSearchTerm = payload.searchTerm;
-    let streamList = payload.searchResult.items;
+    const streamList = payload.searchResult.items;
     for(var i in streamList){
       state.ytStreams.push({
         'stream_id' : streamList[i].id.videoId,
@@ -278,9 +278,9 @@ const getters = {  // {{{
       //console.log('non valid or non existent token')
       return false
     } 
-    let expRaw = JSON.parse(atob(state.jwt.split('.')[1])).exp
-    let exp = new Date(expRaw * 1000)
-    let now = new Date()
+    const expRaw = JSON.parse(atob(state.jwt.split('.')[1])).exp
+    const exp = new Date(expRaw * 1000)
+    const now = new Date()
     return now < exp
   }
 

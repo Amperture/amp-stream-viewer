@@ -4,7 +4,7 @@ import axios from 'axios'
 const API_URL = process.env.API_URL
 
 export function fetchUserInfo(){ // {{{
-  let jwt = localStorage.getItem('jwt')
+  const jwt = localStorage.getItem('jwt')
   return axios.get(`${API_URL}/auth`, 
     {
       headers: {
@@ -18,15 +18,15 @@ export function authorizeUser(authCode){ // {{{
   return axios.post(`${API_URL}/auth`, {authCode: authCode})
 } // }}}
 export function fetchYoutubeStreamSearch(searchText, sortMethod){ //{{{
-  let jwt = localStorage.getItem('jwt')
+  const jwt = localStorage.getItem('jwt')
   if(sortMethod == undefined){
     sortMethod = 'relevance';
   }
   return axios.get(`${API_URL}/youtube/search`, 
     {
       params: {
-        searchText: searchText,
-        sortMethod: sortMethod
+        searchText  : searchText,
+        sortMethod  : sortMethod
       },
       headers: {
         'Authorization' : jwt
@@ -34,13 +34,13 @@ export function fetchYoutubeStreamSearch(searchText, sortMethod){ //{{{
     })
 } //}}}
 export function fetchRepeatYoutubeStreamSearch(){ //{{{
-  let jwt = localStorage.getItem('jwt')
-  let sortMethod = 'relevance';
+  const jwt = localStorage.getItem('jwt')
+  const sortMethod = 'relevance';
   return axios.get(`${API_URL}/youtube/search`, 
     {
       params: {
-        searchMethod: 'lastSearch',
-        sortMethod: sortMethod
+        searchMethod  : 'lastSearch',
+        sortMethod    : sortMethod
       },
       headers: {
         'Authorization' : jwt
@@ -48,7 +48,7 @@ export function fetchRepeatYoutubeStreamSearch(){ //{{{
     })
 } //}}}
 export function fetchStreamInfo(videoID){ //{{{
-  let jwt = localStorage.getItem('jwt')
+  const jwt = localStorage.getItem('jwt')
   return axios.get(`${API_URL}/youtube/stream`, 
     {
       params: {
@@ -64,7 +64,7 @@ export function fetchChatMessages( // {{{
   videoID, 
   chatNextPageToken){ 
 
-  let jwt = localStorage.getItem('jwt')
+  const jwt = localStorage.getItem('jwt')
   return axios.get(`${API_URL}/chat/youtube`, 
     {
       params  : {
@@ -84,10 +84,10 @@ export function fetchChatMessages( // {{{
 export function sendChatMessage( // {{{
   chatID, 
   messageText){
-  let jwt = localStorage.getItem('jwt')
+  const jwt = localStorage.getItem('jwt')
   return axios.post(`${API_URL}/chat/youtube`, {
-      chatID: chatID,
-      messageText: messageText
+      chatID      : chatID,
+      messageText : messageText
     },
     {
       headers: {
@@ -104,17 +104,17 @@ export function fetchStreamStats( // {{{
   filtMods, 
   chatterNameSearch){ 
 
-  let jwt = localStorage.getItem('jwt')
+  const jwt = localStorage.getItem('jwt')
   return axios.get(`${API_URL}/chat/youtube/stats`, 
     {
       params: {
-        videoID: videoID,
-        perPage: perPage,
-        page: page - 1,  // Show pages from 1, but send from 0
-        orderBy: orderBy,
-        chatterNameSearch: chatterNameSearch,
-        filtSponsors: filtSponsors,
-        filtMods: filtMods
+        videoID           : videoID,
+        perPage           : perPage,
+        page              : page - 1,  // Show pages from 1, but send from 0
+        orderBy           : orderBy,
+        chatterNameSearch : chatterNameSearch,
+        filtSponsors      : filtSponsors,
+        filtMods          : filtMods
       },
       headers: {
         'Authorization' : jwt
@@ -125,7 +125,7 @@ export function fetchStreamStats( // {{{
 
 // }}}
 export function fetchErrorTest(){ // {{{
-  let jwt = localStorage.getItem('jwt')
+  const jwt = localStorage.getItem('jwt')
   return axios.get(
     `${API_URL}/errortest`,
     {
@@ -136,7 +136,7 @@ export function fetchErrorTest(){ // {{{
   )
 } // }}}
 export function fetchUserChatLog(videoID, authorID, pageNum, perPage){ // {{{
-  let jwt = localStorage.getItem('jwt')
+  const jwt = localStorage.getItem('jwt')
   return axios.get(
     `${API_URL}/chat/youtube/log`,
     {
@@ -154,7 +154,7 @@ export function fetchUserChatLog(videoID, authorID, pageNum, perPage){ // {{{
   )
 } // }}}
 export function fetchContextChatLog(videoID, msgID, pageNum, perPage){ // {{{
-  let jwt = localStorage.getItem('jwt')
+  const jwt = localStorage.getItem('jwt')
   return axios.get(
     `${API_URL}/chat/youtube/log`,
     {

@@ -25,6 +25,8 @@ Maybe think of it as a non-timestamped dev-diary.
   * Will need to parse through these and see which ones are most relevant to our app.
 
 ## Chat API
+- [ ] Separate Threads for Insert/Upsert of chat messages to database
+  * Initial chat load on Stream Viewer page can take upwards of a second because of all the messages that need to get inserted to the DB.
 - [ ] Better segregation of `liveChatMessages` types.
   * [LiveChatMessages endpoint](https://developers.google.com/youtube/v3/live/docs/liveChatMessages#snippet.type) `snippet.type` object
   * System currently simply displays all text as messages.
@@ -57,3 +59,6 @@ MessageLog.query\
 - [ ] Locale Support
   * Currently hard codes searches to `relevanceLanguage = 'en'`
   * Also has several options for setting up.
+
+## Deployment
+- [ ] "Deploy to Heroku" button
