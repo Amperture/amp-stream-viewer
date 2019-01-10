@@ -58,6 +58,8 @@ $ source venv/bin/activate
 (venv) $ flask db init
 (venv) $ flask db migrate 
 (venv) $ flask db upgrade
+
+(venv) $ flask run # Run Development Server
 ```
 #### Setup Frontend
 ```bash
