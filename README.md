@@ -68,3 +68,38 @@ $ npm run dev # Run Development Server
 
 # Navigate in your browser of choice to the url provided.
 ```
+## Design
+This project was taken on as a challenge test project found [here](https://gist.github.com/osamakhn/aeed06830fbafa2ff9fd31a8326fec0d)
+to better understand front-end development and the Google API libraries, 
+especially the Youtube Data and Youtube Live Streaming APIs. A few key decisions
+were made in the design to facilitate functionality.
+
+### PostgreSQL
+PostgreSQL was chosen for its support of `ON_CONFLICT` parameters for 
+inserts into upserts in the `SQLAlchemy` library.
+
+This was done especially for the case of adding a `ChatterLog` who had 
+changed their displayed username or avatar.`
+
+### Custom Chat Table
+Theoretically the chat from youtube could simply be embedded into the viewing 
+webpage, but since chat must be logged locally to the backend server, it 
+becomes ideal that all chat be routed through the backend server regardless.
+
+This would create a scenario where chat can only be logged if someone is 
+actively watching a stream while using the app, but given the `Kevin` user 
+persona, that assumption was reasonable. 
+
+An alternative method, given more resources could be to log all streams at time
+of search using multithreaded process in the backend server.
+
+### Front Page Search
+The landing page of the app *when the user is logged in* will show a default
+list of streams to the user. This list follows the following algorithm:
+* If the user has never executed a search manually, search using an empty string.
+* Otherwise, repeat the last search the user performed.
+
+This assumption was made on the discovery that using an empty string in the Youtube
+Search API will return what looks to be curated suggestions directly from 
+Youtube. This was tested with three users initially and seems to be the case.
+
