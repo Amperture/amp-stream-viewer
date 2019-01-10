@@ -19,25 +19,13 @@ export default {
     }
 
   }, // }}}
-  computed: { // {{{
-
-  }, // }}}
-  methods: { // {{{ 
-
-
-  }, // }}}
   beforeDestroy(){ // {{{
     // Disable chat polling.
     clearInterval(this.errorPolling)
 
   }, // }}}
-  mounted(){ // {{{
-
-  }, // }}}
   created(){ // {{{
     this.$store.dispatch('pollError')
-      .then((response) => {
-      })
       .catch((error) => {
         console.log(error)
       })
@@ -45,5 +33,3 @@ export default {
 }
 
 </script> /* }}} */
-<style> /* {{{ */
-</style> /* }}} */
