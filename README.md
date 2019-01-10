@@ -19,12 +19,12 @@ You can find a live demo of this app [here](https://vast-dusk-61702.herokuapp.co
 #### Installing depdency packages for Frontend
 1. `$ npm i`
 
-####Setup for Virtual Environment For Python and Install Dependencies for Backend
+#### Setup for Virtual Environment For Python and Install Dependencies for Backend
 1. `$ python3 -m venv venv`
 2. `$ source venv/bin/activate`
 3. `(venv) $ pip install -r requirements.txt`
 
-####Required Environment Variables
+#### Required Environment Variables
 * `FLASK_APP=sv.py`
 * Google App Credentials
   * `GOOGLE_OAUTH_CLIENT_ID`
@@ -40,16 +40,16 @@ You can find a live demo of this app [here](https://vast-dusk-61702.herokuapp.co
 * `FLASK_DEBUG`: 1 or 0
 * Environment Variables can be placed in a file named `.flaskenv` in the project root directory for development.
 
-####Database initialization and migrations.
+#### Database initialization and migrations.
 `(venv) $ flask db init`
 
 Any changes to database should be migrated 
 1. `(venv) $ flask db migrate`
 2. `(venv) $ flask db upgrade`
 
-####Running Frontend Development Server
+#### Running Frontend Development Server
 `$ npm run dev`
 
-####Running Backend Development Server
+#### Running Backend Development Server
 `(venv) $ flask run`
 
