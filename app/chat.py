@@ -67,8 +67,6 @@ def chat_youtube_post(user):
                 'error': 'unknown_error'
                 }), 500
 
-    # }}}
-
     response = {
             'sucess': True,
             'jwt': user['jwt']
@@ -178,7 +176,7 @@ def chat_youtube_stats_get(user):
     except Exception as ex:
         print(ex)
 
-    # Grab number of chatters fitting filter criteria {{{
+    # Grab number of chatters fitting filter criteria
 
     try:
         numChattersFilter = MessageLog.query\
@@ -207,8 +205,6 @@ def chat_youtube_stats_get(user):
         return jsonify({
             'error': 'unknown_backend_error'
             }), 500
-
-    # }}}
 
     try:
         chatActivityRank = _rankChatters(
