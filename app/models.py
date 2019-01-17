@@ -67,7 +67,7 @@ class StreamLog(db.Model):
     video_description = db.Column(db.String(5000), nullable=False)
     chat_id = db.Column(db.String(64), nullable=False)
 
-    # {{{ Streams to Chatters Relationship
+    # Streams to Chatters Relationship
     '''
     Streams to Chatters is many-to-many relationship, reference the
     chatters_in_stream relationship table
@@ -92,9 +92,8 @@ class ChatterLog(db.Model):
     author_name = db.Column(db.String(64), nullable=False)
     avatar = db.Column(db.String(128), nullable=False)
 
-    # Parent Relationships {{{
+    # Parent Relationships
     messages = db.relationship('MessageLog', backref='author')
-    # }}}
 
 
 class MessageLog(db.Model):
@@ -104,14 +103,14 @@ class MessageLog(db.Model):
     text = db.Column(db.String(512), nullable=False)
     timestamp = db.Column(db.DateTime(), nullable=False)
 
-    # Stream and Author information {{{
+    # Stream and Author information
     stream_id = db.Column(
             db.String(32),
             db.ForeignKey('stream_log.video_id'))
     author_id = db.Column(
             db.String(512),
             db.ForeignKey('chatter_log.author_channel_id'))
-    # Relevant Author Tags {{{
+    # Relevant Author Tags
     is_mod = db.Column(db.Boolean())
     is_owner = db.Column(db.Boolean())
     is_sponsor = db.Column(db.Boolean())
